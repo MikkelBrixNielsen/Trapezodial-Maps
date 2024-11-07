@@ -59,4 +59,4 @@ class Trapezoid:
         return *self.upper.intersect_vertical_line(p), *self.lower.intersect_vertical_line(p)
     
     def __str__(self):
-        return f'Trapezoid(upper: {self.upper}, lower: {self.lower}, leftp: {self.leftp}, rightp: {self.rightp})'
+        return f'Trapezoid(\n\tupper: {self.upper}\n\tlower: {self.lower}\n\tleftp: {self.leftp}\n\trightp: {self.rightp}\n)'
