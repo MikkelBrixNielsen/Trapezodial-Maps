@@ -3,6 +3,8 @@ from objects import LineSegment, Trapezoid, Point
 from SS import SearchStructure
 import matplotlib.pyplot as plt
 
+BB = None
+
 "--------------------------------------------------DEBUG METHODS--------------------------------------------------"
 def print_border():
     print("--------------------------------------------------------------------------------------------------")
@@ -24,7 +26,8 @@ def print_SS_aux(SS):
     for t in traps:
         print(t)
         t.plot()
-        plt.show()
+        BB.plot()
+    plt.show()
 
 def print_SS(SS):
     print_borders(print_SS_aux, SS)
@@ -38,9 +41,7 @@ def print_queue_and_SS(queue, SS):
     print_SS_aux(SS)
     print_border()
 
-
 "-----------------------------------------------------------------------------------------------------------------"
-
 
 def extract_points(linesegments):
     return [p for ls in linesegments for p in (ls.start, ls.end)]
@@ -73,6 +74,7 @@ def generate_random_perm(linesegments):
     return random.sample(linesegments, len(linesegments))
 
 def initialization(linesegments):
+    global BB
     BB, perm = create_bounding_box(linesegments), generate_random_perm(linesegments)
     SS = SearchStructure(BB)
     return SS, perm
@@ -82,7 +84,6 @@ def BTM(linesegments, debug=False):
     if debug:
         print_queue_and_SS(queue, SS)
 
-
     for s in queue:
         if debug:
             print(f"Inserting line segment {s}...")
@@ -91,6 +92,5 @@ def BTM(linesegments, debug=False):
 
         if debug:
             print_SS(SS)
-
 
     return SS.get_TM(), SS
