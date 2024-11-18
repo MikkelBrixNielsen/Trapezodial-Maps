@@ -1,6 +1,5 @@
 from objects import Trapezoid, LineSegment, Point
 
-
 class Node:
     def __init__(self, data=None, left=None, right=None):
         self.data = data # Can be region, line segment or point
@@ -79,7 +78,6 @@ class SearchStructure:
         else: 
             right.data.leftN = [left]
 
-
     # Tries to merge delta_i with delta_i+1 and returns the trapezoid to continue to try and merge delta_i+2 and so on         
     def _merge_above_aux(self, node, left_region_node, right_region_node):
         # merging/making trapezoids above/below the segment
@@ -125,40 +123,8 @@ class SearchStructure:
             else: # INSERTED SEGMENT SPLITS ABOVE - SO DELTA_1.leftN GETS B ON [1] AND ITS PREVIOUS ON [0]
                 trap.rightN[0].data.leftN = [B, C]
                 trap.rightN[1].data.leftN = [C]
-
-        # if trap.rightN and len(trap.rightN) == 1:
-        #     # MAYBE OKAY IDK - HASN'T RESOLVED THE ISSUE WITH NEIGHBOURS BEING POINTS THO - FIXME
-        #     # give B and C as leftN to right neighbour of trap
-        #     trap.rightN[0].data.leftN = [B, C]
-            
-        # # ASSIGN RIGHT NEIGHBOURS TO B AND C BASED ON SEGMENT POSITION AND NEIGHBOURS OF delta_i ("trap")
-        # elif trap.rightN and len(trap.rightN) == 2:
-        #     if self._is_below(trap.rightp, seg): # right point of delta_i is below the inserted segment, so "C" gets both right neighbours
-                
-        #         # MAYBE OKAY IDK - HASN'T RESOLVED THE ISSUE WITH NEIGHBOURS BEING POINTS THO - FIXME
-        #         # If inserting (i.e., splitting) above, give upper right neighbour B, give lower B and C
-        #         T_RN0_LN = trap.rightN[0].data.leftN
-        #         T_RN0_LN = [T_RN0_LN[0], B] if T_RN0_LN and len(T_RN0_LN) >= 2 else [B]
-        #         trap.rightN[1].data.leftN = [B, C]
-
-
-        #         C.data.rightN = trap.rightN
-        #         B.data.rightN = [trap.rightN[0]]
-        #     else: # right point of delta_i is above the inserted segment, so "B" gets both right neighbours
-                
-        #         # MAYBE OKAY IDK - HASN'T RESOLVED THE ISSUE WITH NEIGHBOURS BEING POINTS THO - FIXME
-        #         # If inserting (i.e., splitting) above, give lower right neighbour B, give upper B and C
-        #         T_RN1_LN = trap.rightN[1].data.leftN
-        #         T_RN1_LN = [T_RN1_LN[0], C] if T_RN1_LN and len(T_RN1_LN) >= 2 else [C]
-        #         trap.rightN[0].data.leftN = [B, C]
-
-
-        #         B.data.rightN = trap.rightN
-        #         C.data.rightN = [trap.rightN[1]]
-        # else:
-        #     C.data.rightN = B.data.rightN = trap.rightN
-
         
+        # NOTE: CAN MAYBE BE USED TO FIX NEIGHBOURS IN "BASE CASE"
         # rearrange delta_0's previous left neighbours to point to A
         if trap.leftN: # if trap being split by s_i has left neighbors
             for n in trap.leftN:
@@ -167,8 +133,6 @@ class SearchStructure:
                     n.data.rightN[idx] = A
                 else: # only has one neighbour
                     n.data.rightN = [A]
-        
-        # FIXME: make delta_0's right neighbours point to eihter B or C 
 
         return A, B, C
 
@@ -187,58 +151,6 @@ class SearchStructure:
                 trap.leftN[0].data.rightN = [B, C]
                 trap.leftN[1].data.rightN = [C]
 
-
-        # if trap.leftN and len(trap.leftN) == 1:
-        #     # MAYBE OKAY IDK - HASN'T RESOLVED THE ISSUE WITH NEIGHBOURS BEING POINTS THO - FIXME
-        #     # give B and C as leftN to right neighbour of trap
-        #     trap.leftN[0].data.rightN = [B, C]
-            
-        # # ASSIGN RIGHT NEIGHBOURS TO B AND C BASED ON SEGMENT POSITION AND NEIGHBOURS OF delta_i ("trap")
-        # elif trap.leftN and len(trap.leftN) == 2:
-        #     if self._is_below(trap.leftp, seg): # right point of delta_i is below the inserted segment, so "C" gets both right neighbours
-                
-        #         # MAYBE OKAY IDK - HASN'T RESOLVED THE ISSUE WITH NEIGHBOURS BEING POINTS THO - FIXME
-        #         # If inserting (i.e., splitting) above, give upper right neighbour B, give lower B and C
-        #         T_LN0_RN = trap.leftN[0].data.rightN
-        #         T_LN0_RN = [T_LN0_RN[0], B] if T_LN0_RN and len(T_LN0_RN) >= 2 else [B]
-        #         trap.leftN[1].data.rightN = [B, C]
-
-
-        #         C.data.leftN = trap.leftN
-        #         B.data.leftN = [trap.leftN[0]]
-        #     else: # right point of delta_i is above the inserted segment, so "B" gets both right neighbours
-                
-        #         # MAYBE OKAY IDK - HASN'T RESOLVED THE ISSUE WITH NEIGHBOURS BEING POINTS THO - FIXME
-        #         # If inserting (i.e., splitting) above, give lower right neighbour B, give upper B and C
-        #         T_RN1_LN = trap.leftN[1].data.rightN
-        #         T_RN1_LN = [T_RN1_LN[0], C] if T_RN1_LN and len(T_RN1_LN) >= 2 else [C]
-        #         trap.leftN[0].data.rightN = [B, C]
-
-
-        #         B.data.leftN = trap.leftN
-        #         C.data.lefTN = [trap.leftN[1]]
-        # else:
-        #     C.data.leftN = B.data.leftN = trap.leftN
-
-
-       ## ASSIGN LEFT NEIGHBOURS TO B AND C BASED ON SEGMENT POSITION AND NEIGHBOURS OF delta_k ("trap")
-       #if trap.leftN and len(trap.leftN) >= 2:
-       #    if self._is_below(trap.leftp, seg): # left point of delta_k is below the inserted segment, so "C" gets both left neighbours
-       #        C.data.leftN = trap.leftN
-       #        
-       #        B.data.leftN = [trap.leftN[0]]
-       #    else: # left point of delta_k is above the inserted segment "B" gets both left neighbours
-       #        B.data.leftN = trap.leftN
-       #        trap_LN0 = trap.leftN[0].data # delta_k-1
-       #        if trap_LN0.rightN and len(trap_LN0.rightN) >= 2:
-       #            trap_LN0.rightN[1] = B 
-       #        else:
-       #            trap_LN0.rightN = [B]
-       #        C.data.leftN = [trap.leftN[1]]
-       #else:
-       #    C.data.leftN = B.data.leftN = trap.leftN
-
-
         # rearrange delta_k's previous neihgbours to point to A
         if trap.rightN: # if trap being split by s_i has right neighbors
             for n in trap.rightN:
@@ -249,7 +161,6 @@ class SearchStructure:
                     n.data.leftN[idx] = A
                 else: # only has one neighbour
                     n.data.leftN = [A]
-
         return A, B, C
     
     def _create_trapezoids(self, node, seg_node, trap, is_first):
@@ -269,7 +180,6 @@ class SearchStructure:
             right_region.rightN[0].data.leftN[0 if is_above else 1] = left_region_node
         else:
             self._fix_neighbours(left_region_node, right_region_node, is_above)
-
 
     def insert(self, seg, debug=False):
         node = self._find_region(seg.start) # get region for point (delta_0) - Trapezoid is node.data
@@ -305,7 +215,7 @@ class SearchStructure:
                 print("after setting left/right on segment")
                 self.show()
 
-
+            # FIXME: uncomment and make sure works
             # # Iteratively handle the middle traps
             # for trap in traps[1:-1]: # if it helps; "trap" is the same as "delta_i"
             #     current = trap.data # trapezoid 
@@ -334,7 +244,6 @@ class SearchStructure:
             if debug:
                 print("after final merge C and C_last")
                 self.show()
-
 
         else: # traps <= 1, so entire segment is contained within a single trapezoid / region
             print(f"case {seg} intersects single trapezoid")
