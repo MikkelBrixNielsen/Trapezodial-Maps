@@ -58,5 +58,15 @@ class Trapezoid:
     def vertical_line_intersections(self, p):
         return *self.upper.intersect_vertical_line(p), *self.lower.intersect_vertical_line(p)
     
-    def __str__(self):
-        return f'Trapezoid(\n\tupper: {self.upper}\n\tlower: {self.lower}\n\tleftp: {self.leftp}\n\trightp: {self.rightp}\n)'
+    def _print_neighbours(self, neigh):
+        s = []
+        if neigh:
+            for n in neigh:
+                s.append(str(n.data.__class__.__name__))
+        return s
+    
+    def __str__(self, indent=""):
+        return f'Trapezoid(\n\t{indent}upper: {self.upper}\n\t{indent}lower: {self.lower}\n\t{indent}leftp: {self.leftp}\n\t{indent}rightp: {self.rightp}\n\t{indent}rightN: {self._print_neighbours(self.rightN)}\n\t{indent}leftN: {self._print_neighbours(self.leftN)}\n{indent})'
+    
+    def to_string_with_indent(self, indent):
+        return self.__str__(indent)

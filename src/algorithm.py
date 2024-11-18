@@ -5,9 +5,9 @@ import matplotlib.pyplot as plt
 
 BB = None
 
-"--------------------------------------------------DEBUG METHODS--------------------------------------------------"
+################################################### DEBUG METHODS ##################################################
 def print_border():
-    print("--------------------------------------------------------------------------------------------------")
+    print(98 * "-")
     
 def print_borders(method, arg):
     print_border()
@@ -23,14 +23,25 @@ def print_queue(queue):
 
 def print_SS_aux(SS):
     traps = SS.get_TM()
+    BB.plot()
+    for t in traps:
+        print(t)
+        t.plot()
+    plt.show()
+
+def print_each_trap(SS):
+    traps = SS.get_TM()
     for t in traps:
         print(t)
         t.plot()
         BB.plot()
-    plt.show()
+        plt.show()
 
 def print_SS(SS):
     print_borders(print_SS_aux, SS)
+
+def display_SS(SS):
+    SS.show()
 
 def print_queue_and_SS(queue, SS):
     print_border()
@@ -41,14 +52,19 @@ def print_queue_and_SS(queue, SS):
     print_SS_aux(SS)
     print_border()
 
-"-----------------------------------------------------------------------------------------------------------------"
+def plot_line_segments(segments):
+    for seg in segments:
+        seg.plot()
+    plt.show()
+
+##################################################################################################################
 
 def extract_points(linesegments):
     return [p for ls in linesegments for p in (ls.start, ls.end)]
 
 def find_min_max(points):
     x_min, x_max, y_min, y_max = points[0].x, points[0].x, points[0].y, points[0].y
-    for p in points: # could start at first index in points but thought this was more readable
+    for p in points:
         if p.x >= x_max:
             x_max = p.x
         elif p.x <= x_min:
@@ -81,8 +97,9 @@ def initialization(linesegments):
 
 def BTM(linesegments, debug=False):
     SS, queue = initialization(linesegments)
-    if debug:
-        print_queue_and_SS(queue, SS)
+    # if debug:
+    #     plot_line_segments(linesegments)
+    #     print_queue_and_SS(queue, SS)
 
     for s in queue:
         if debug:
@@ -90,7 +107,10 @@ def BTM(linesegments, debug=False):
 
         SS.insert(s, debug=debug)
 
-        if debug:
-            print_SS(SS)
+        #if debug:
+        #    print_each_trap(SS)
+
+    #if debug:
+        #print_SS(SS)
 
     return SS.get_TM(), SS
