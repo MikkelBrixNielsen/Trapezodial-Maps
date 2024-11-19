@@ -55,6 +55,7 @@ def print_queue_and_SS(queue, SS):
 def plot_line_segments(segments):
     for seg in segments:
         seg.plot()
+    BB.plot()
     plt.show()
 
 ##################################################################################################################
@@ -96,21 +97,26 @@ def initialization(linesegments):
     return SS, perm
 
 def BTM(linesegments, debug=False):
+    order = [] # for debugging    
     SS, queue = initialization(linesegments)
-    # if debug:
-    #     plot_line_segments(linesegments)
-    #     print_queue_and_SS(queue, SS)
+    if debug:
+        #plot_line_segments(linesegments)
+        # print_queue_and_SS(queue, SS)
+        display_SS(SS)
 
     for s in queue:
         if debug:
             print(f"Inserting line segment {s}...")
+            order.append(s)
 
         SS.insert(s, debug=debug)
 
         #if debug:
         #    print_each_trap(SS)
 
-    #if debug:
+    if debug:
         #print_SS(SS)
+        for s in order:
+            print(s)
 
-    return SS.get_TM(), SS
+    return SS.get_TM(debug), SS

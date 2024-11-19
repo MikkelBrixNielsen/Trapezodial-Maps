@@ -120,7 +120,7 @@ def create_line_segments_and_point(content): # O(n)
 
 
 
-
+# FIXME implement
 def write_to_file(region):
     pass
 

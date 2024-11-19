@@ -116,15 +116,16 @@ class SearchStructure:
         C = Node(Trapezoid(seg, trap.lower, seg.start, trap.rightp, leftN=[A]))
         A.data.rightN = [B, C]
 
-        if trap.rightN and len(trap.rightN) == 2:
-            if not self._is_below(trap.rightp, seg): # INSERTED SEGMENT SPLITS BELOW - SO DELTA_1.leftN GETS C ON [0] AND ITS PREVIOUS ON [1]
-                trap.rightN[0].data.leftN = [B]
-                trap.rightN[1].data.leftN = [B, C]
-            else: # INSERTED SEGMENT SPLITS ABOVE - SO DELTA_1.leftN GETS B ON [1] AND ITS PREVIOUS ON [0]
-                trap.rightN[0].data.leftN = [B, C]
-                trap.rightN[1].data.leftN = [C]
+        # THIS IS USED IN CASES SIMILAR TO THAT SHOWN IN Tests/test2.txt
+        # if trap has only 1 rightN, then that neighbour might have two neighbours to the left - that case is handled elsewhere - FIXME
+        # if trap.rightN and len(trap.rightN) == 2: 
+        #     if not self._is_below(trap.rightp, seg): # INSERTED SEGMENT SPLITS BELOW - SO DELTA_1.leftN GETS C ON [0] AND ITS PREVIOUS ON [1]
+        #         trap.rightN[0].data.leftN = [B]
+        #         trap.rightN[1].data.leftN = [B, C]
+        #     else: # INSERTED SEGMENT SPLITS ABOVE - SO DELTA_1.leftN GETS B ON [1] AND ITS PREVIOUS ON [0]
+        #         trap.rightN[0].data.leftN = [B, C]
+        #         trap.rightN[1].data.leftN = [C]
         
-        # NOTE: CAN MAYBE BE USED TO FIX NEIGHBOURS IN "BASE CASE"
         # rearrange delta_0's previous left neighbours to point to A
         if trap.leftN: # if trap being split by s_i has left neighbors
             for n in trap.leftN:
@@ -143,21 +144,21 @@ class SearchStructure:
         C = Node(Trapezoid(seg, trap.lower, trap.leftp, seg.end, rightN=[A]))
         A.data.leftN = [B, C]
 
-        if trap.leftN and len(trap.leftN) == 2:
-            if not self._is_below(trap.rightp, seg): # INSERTED SEGMENT SPLITS BELOW - SO DELTA_1.leftN GETS C ON [0] AND ITS PREVIOUS ON [1]
-                trap.leftN[0].data.rightN = [B]
-                trap.leftN[1].data.rightN = [B, C]
-            else: # INSERTED SEGMENT SPLITS ABOVE - SO DELTA_1.leftN GETS B ON [1] AND ITS PREVIOUS ON [0]
-                trap.leftN[0].data.rightN = [B, C]
-                trap.leftN[1].data.rightN = [C]
+        # THIS IS USED IN CASES SIMILAR TO THAT SHOWN IN Tests/test2.txt
+        # if trap has only 1 rightN, then that neighbour might have two neighbours to the left - that case is handled elsewhere - FIXME
+        # if trap.leftN and len(trap.leftN) == 2:
+        #     if not self._is_below(trap.rightp, seg): # INSERTED SEGMENT SPLITS BELOW - SO DELTA_1.leftN GETS C ON [0] AND ITS PREVIOUS ON [1]
+        #         trap.leftN[0].data.rightN = [B]
+        #         trap.leftN[1].data.rightN = [B, C]
+        #     else: # INSERTED SEGMENT SPLITS ABOVE - SO DELTA_1.leftN GETS B ON [1] AND ITS PREVIOUS ON [0]
+        #         trap.leftN[0].data.rightN = [B, C]
+        #         trap.leftN[1].data.rightN = [C]
 
         # rearrange delta_k's previous neihgbours to point to A
         if trap.rightN: # if trap being split by s_i has right neighbors
             for n in trap.rightN:
                 if len(n.data.leftN) == 2:
-                    print("len two")
                     idx = 0 if n.data.leftN[0].data == trap else 1
-                    print("idx: ", idx)
                     n.data.leftN[idx] = A
                 else: # only has one neighbour
                     n.data.leftN = [A]
@@ -186,11 +187,9 @@ class SearchStructure:
         seg_node = Node(seg) # create node for the segment s_i
         traps = self._follow_segment(node, seg) # traps is a list of nodes of the trapezoids which follow s_i
 
-        if debug:
-            self.show()
-
         if len(traps) > 1:
-            print(f"case {seg} intersects multiple trapezoids")
+            if debug:
+                print(f"case {seg} intersects multiple trapezoids")
             A, B, C = self._create_trapezoids(traps[0], seg_node, traps[0].data, is_first=True) # delta_0
             if debug:
                 print("after creating first")
@@ -215,27 +214,25 @@ class SearchStructure:
                 print("after setting left/right on segment")
                 self.show()
 
-            # FIXME: uncomment and make sure works
-            # # Iteratively handle the middle traps
-            # for trap in traps[1:-1]: # if it helps; "trap" is the same as "delta_i"
-            #     current = trap.data # trapezoid 
-            #     trap.data = seg # node now representing segment s_i
+            # Iteratively handle the middle traps FIXME
+            for trap in traps[1:-1]: # if it helps; "trap.data" is the same as "delta_i"
+                current = trap.data # trapezoid 
+                trap.data = seg # node now representing segment s_i
 
-            #     # split current trapezoid 
-            #     above = Node(Trapezoid(current.upper, seg, current.leftp, current.rightp))
-            #     below = Node(Trapezoid(seg, current.lower, current.leftp, current.rightp))
+                # split current trapezoid - W.I.P.
+                above = Node(Trapezoid(current.upper, seg, current.leftp, current.rightp))
+                below = Node(Trapezoid(seg, current.lower, current.leftp, current.rightp))
 
-            #     # Trying to merge the delta_i and delta_i+1 above and below the segment
-            #     B = self._merge_trapezoids(trap, B, above, is_above=True)
-            #     if debug:
-            #         self.show()
-            #     C = self._merge_trapezoids(trap, C, below, is_above=False)
-            #     if debug:
-            #         self.show()
+                # Trying to merge the delta_i and delta_i+1 above and below the segment
+                B = self._merge_trapezoids(trap, B, above, is_above=True)
+                if debug:
+                    self.show()
+                C = self._merge_trapezoids(trap, C, below, is_above=False)
+                if debug:
+                    self.show()
+
 
             # Trying to merge the second to last and last trapezoid above and below the segment
-
-            # NOTE eller FIXME - THIS IS BROKEN !!! FIRST PRIORITY !!! FIX THIS PLEASE !!! XXX !!!
             self._final_merge(B, B_last, is_above=True)
             if debug:
                 print("after final merge B and B_last")
@@ -246,7 +243,8 @@ class SearchStructure:
                 self.show()
 
         else: # traps <= 1, so entire segment is contained within a single trapezoid / region
-            print(f"case {seg} intersects single trapezoid")
+            if debug:
+                print(f"case {seg} intersects single trapezoid")
             # Trapezoid border data
             upper = node.data.upper
             lower = node.data.lower
@@ -267,31 +265,31 @@ class SearchStructure:
             # so if node is a left neighbour to its right neighbour then that cannot have two left neighbours.
             if node.data.leftN:
                 if len(node.data.leftN) >= 2:
-                    node.data.leftN[0].rightN = [A]
-                    node.data.leftN[1].rightN = [A]
+                    node.data.leftN[0].data.rightN = [A]
+                    node.data.leftN[1].data.rightN = [A]
                 else:
-                    if node.data.leftN[0].rightN and len(node.data.leftN[0].rightN) >= 2:
-                        idx = 0 if node.data.leftN[0].rightN[0] == node else 1
-                        node.data.leftN[0].rightN[idx] = [A]
+                    if node.data.leftN[0].data.rightN and len(node.data.leftN[0].data.rightN) >= 2:
+                        idx = 0 if node.data.leftN[0].data.rightN[0] == node else 1
+                        node.data.leftN[0].data.rightN[idx] = A # NOTE - i removed the brackets around A here btw idk
                     else:
-                        node.data.leftN[0].rightN = [A]
+                        node.data.leftN[0].data.rightN = [A]
 
             if node.data.rightN:
                 if len(node.data.rightN) >= 2:
-                    node.data.rightN[0].leftN = [B]
-                    node.data.rightN[1].leftN = [B]
+                    node.data.rightN[0].data.leftN = [B]
+                    node.data.rightN[1].data.leftN = [B]
                 else:
-                    if node.data.right[0].leftN and len(node.data.rightN[0].leftN) >= 2:
-                        idx = 0 if node.data.rightN[0].leftN[0] == node else 1
-                        node.data.rightN[0].leftN[idx] = [B]
+                    if node.data.right[0].data.leftN and len(node.data.rightN[0].data.leftN) >= 2:
+                        idx = 0 if node.data.rightN[0].data.leftN[0] == node else 1
+                        node.data.rightN[0].data.leftN[idx] = B # NOTE - i removed the brackets around B here btw idk
                     else:
-                        node.data.rightN[0].leftN = [B]
+                        node.data.rightN[0].data.leftN = [B]
             
             # rearrange SS structure to reflect that trapezoids A, B, C, D has replaced delta_0
             node.data = seg.start # change delta_0 -> p_i
 
             # set p_i's left and right child 
-            node.left = A 
+            node.left = A
             node.right = q_node = Node(seg.end)
 
             # set q_i's left and right child
@@ -302,8 +300,8 @@ class SearchStructure:
             seg_node.left = C
             seg_node.right = D
            
-        print(f"#traps: {len(traps)}")
         if debug:
+            print(f"#traps: {len(traps)}")
             self.show()
 
     def _get_TM_aux(self, current):
@@ -312,8 +310,9 @@ class SearchStructure:
         else:
             return self._get_TM_aux(current.left) + self._get_TM_aux(current.right)
 
-    def get_TM(self):
-        print(f"#traps in trapmap: {len(self._get_TM_aux(self.root))}")
+    def get_TM(self, debug=False):
+        if debug:
+            print(f"#traps in trapmap: {len(self._get_TM_aux(self.root))}")
         return self._get_TM_aux(self.root)
     
     def _show_aux(self, current, level=0, s="Root: "):
