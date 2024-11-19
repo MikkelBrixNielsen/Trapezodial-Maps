@@ -130,7 +130,6 @@ class SearchStructure:
         else: # len(leftN) <= 1
             pass # this case is fixed by intermediate merge or final merge depending on #traps s_i intersects
 
-
         # rearrange delta_0's previous left neighbours to point to A
         if trap.leftN: # if trap being split by s_i has left neighbors
             for n in trap.leftN:
@@ -159,22 +158,25 @@ class SearchStructure:
                 else: # only has one neighbour
                     n.data.leftN = [A]
 
-        #if trap.leftN and len(trap.leftN) == 2:
-        #  if not self._is_below(trap.leftp, seg): # segment inserted below trap.rightp
-        #      trap.leftN[0].data.rightN = [B]
-        #      #trap.leftN[1].data.rightN = [B, C]
-        #      B.data.leftN = trap.leftN
-        #      C.data.leftN = [trap.leftN[1]]
-        #  else: # segment inserted above trap.rightp
-        #      #trap.leftN[0].data.rightN = [B, C]
-        #      trap.leftN[1].data.rightN = [C]
-        #      B.leftN = [trap.leftN[0]]
-        #      C.leftN = trap.leftN
-        #else: # len(leftN) <= 1
-        #    pass # this case is fixed by intermediate merge stuff probably idk ask Mikkel
-                    
-        
-        
+        # FIXME - THIS IS A PROBLEM BUT THE IDEA MIGHT BE GOOD IT JUST SUCKS RN IDK
+        if trap.leftN and len(trap.leftN) == 2:
+            if not self._is_below(trap.leftp, seg): # segment inserted below trap.leftp
+                trap.leftN[0].data.rightN = [B] # give the upper left neighbour of delta_k to B (the farthest relevant region from inserted segment)
+                B.data.leftN = [trap.leftN[0]] # also the other way
+
+                #trap.leftN[1].data.rightN = [B, C] # I THINK THIS IS BAD
+                #B.data.leftN = trap.leftN # I THINK THIS IS ALSO BAD MAYBE
+
+            else: # segment inserted above trap.leftp
+                trap.leftN[1].data.rightN = [C] # give the lower left neighbour delta_k to C (the farthest relevant region from inserted segment)
+                C.leftN = [trap.leftN[1]] # also the other way
+
+                #trap.leftN[0].data.rightN = [B, C] # I THINK THIS IS BAD
+                #B.leftN = trap.leftN # I THINK THIS IS ALSO BAD MAYBE 
+
+        else: # len(leftN) <= 1
+            pass # this case is fixed by intermediate merge stuff probably idk ask Mikkel
+
         return A, B, C
     
     def _create_trapezoids(self, node, seg_node, trap, is_first):
@@ -196,6 +198,7 @@ class SearchStructure:
             self._fix_intermediate_neighbours(left_region_node, right_region_node, is_above)
 
     def insert(self, seg, debug=False):
+        print("INSERTING: ", seg)
         node = self._find_region(seg.start) # get region for point (delta_0) - Trapezoid is node.data
         seg_node = Node(seg) # create node for the segment s_i
         traps = self._follow_segment(node, seg) # traps is a list of nodes of the trapezoids which follow s_i
@@ -247,7 +250,6 @@ class SearchStructure:
                         below.data.rightN = [C, current.rightN[1]]
                         below.data.rightN[1].data.leftN = [below]
 
-
                 # Trying to merge the delta_i and delta_i+1 above and below the segment
                 B = self._merge_trapezoids(trap, B, above, is_above=True)
                 if debug:
@@ -258,7 +260,17 @@ class SearchStructure:
 
             # Handling delta_k-1
             A_last, B_last, C_last = self._create_trapezoids(traps[-1], seg_node, traps[-1].data, is_first=False) # delta_k
-
+            
+            if not flag: # assigns neigbhours to B_last and C_last - one has been given the outermost region prior 
+                         # (which depends on whether the segment is inserted above or below leftp of delta_k) - FIXME / W.I.P.
+                B_last.data.leftN = [B_last.data.leftN[0], B] if B_last.data.leftN and len(B_last.data.leftN) == 1 else [B]
+                C_last.data.leftN = [C, C_last.data.leftN[1]] if C_last.data.leftN and len(C_last.data.leftN) == 1 else [C]
+                
+                # assigns the other way - maybe just force assign both of them if we are sure that they cant already have a rightN anyway
+                B.data.rightN = [B_last, B.data.rightN[0]] if B.data.rightN and len(B.data.rightN) == 2 else [B_last] # probably overkill
+                C.data.rightN = [C_last, C.data.rightN[1]] if C.data.rightN and len(C.data.rightN) == 2 else [C_last] # probably overkill
+            
+            # FIXME - i forgot what this does so idk if we need it and i dont wanna remove it but maybe it should be
             if flag: # seg covers three or more traps
                 if (not above.data.rightN) or len(above.data.rightN) == 1:
                     above.data.rightN = [B_last]
@@ -281,7 +293,9 @@ class SearchStructure:
                 self.show()
 
             traps[-1].overwrite(seg.end, seg_node, A_last) # overwrite delta_k with q
-        
+
+
+
         else: # traps <= 1, so entire segment is contained within a single trapezoid / region
             if debug:
                 print(f"case {seg} intersects single trapezoid")
@@ -319,7 +333,7 @@ class SearchStructure:
                     node.data.rightN[0].data.leftN = [B]
                     node.data.rightN[1].data.leftN = [B]
                 else:
-                    if node.data.right[0].data.leftN and len(node.data.rightN[0].data.leftN) >= 2:
+                    if node.data.rightN[0].data.leftN and len(node.data.rightN[0].data.leftN) >= 2:
                         idx = 0 if node.data.rightN[0].data.leftN[0] == node else 1
                         node.data.rightN[0].data.leftN[idx] = B # NOTE - i removed the brackets around B here btw idk
                     else:
@@ -343,14 +357,6 @@ class SearchStructure:
         if debug:
             print(f"#traps: {len(traps)}")
             self.show()
-
-
-
-
-
-
-
-
 
     def _get_TM_aux(self, current):
         if not (current.left and current.right): # has no left or right children => is leaf => trapezoid
