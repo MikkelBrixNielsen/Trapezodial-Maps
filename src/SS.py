@@ -183,6 +183,7 @@ class SearchStructure:
             self._fix_neighbours(left_region_node, right_region_node, is_above)
 
     def insert(self, seg, debug=False):
+        print("Inserting: ", seg)
         node = self._find_region(seg.start) # get region for point (delta_0) - Trapezoid is node.data
         seg_node = Node(seg) # create node for the segment s_i
         traps = self._follow_segment(node, seg) # traps is a list of nodes of the trapezoids which follow s_i
@@ -222,6 +223,21 @@ class SearchStructure:
                 # split current trapezoid - W.I.P.
                 above = Node(Trapezoid(current.upper, seg, current.leftp, current.rightp))
                 below = Node(Trapezoid(seg, current.lower, current.leftp, current.rightp))
+
+                # if delta_i has two left neighbours
+                if len(current.leftN) == 2:
+                    # if segment is inserted below the left-defining point of current
+                    if not self._is_below(current.leftp, seg):
+                        # the above region gets previous upper left neighbour of delta_i and new B
+                        above.data.leftN = [current.leftN[0], B]
+                        below.data.leftN = [C]
+                    # if segment is inserted above the left-defining point of current
+                    else:
+                        above.data.leftN = [B]
+                        below.data.leftN = [C, current.leftN[1]]
+                else:
+                    pass
+
 
                 # Trying to merge the delta_i and delta_i+1 above and below the segment
                 B = self._merge_trapezoids(trap, B, above, is_above=True)
