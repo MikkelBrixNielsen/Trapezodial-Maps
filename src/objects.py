@@ -18,20 +18,21 @@ class LineSegment:
         self.start = Point(x1, y1, self)
         self.end = Point(x2, y2, self)
     
-    def plot(self):
+    def plot(self, marker=True):
         x_coords = [self.start.x, self.end.x]
         y_coords = [self.start.y, self.end.y]
-        plt.plot(x_coords, y_coords, marker='o', linestyle='-', color="black")
+        if marker:
+            plt.plot(x_coords, y_coords, marker='o', linestyle='-', color="black")
+        else:
+            plt.plot(x_coords, y_coords, linestyle='-', color="black")
 
+    def intersect_vertical_line(self, x):
+        slope = (self.end.y - self.start.y) / (self.end.x - self.start.x)
+        intercept = self.start.y - slope * self.start.x
+        return x, (slope * x + intercept)
+    
     def __str__(self):
         return f'LineSegment(from: {self.start}, to: {self.end})'
-    
-    def intersect_vertical_line(self, x):
-        if min(self.start.x, self.end.x) <= x <= max(self.start.x, self.end.x):
-            slope = (self.end.y - self.start.y) / (self.end.x - self.start.x)
-            y_intersect = self.start.y + slope * (x - self.start.x)
-            return x, y_intersect
-        return None
     
 class Trapezoid:
     REGION_COUNT = 0
@@ -50,10 +51,11 @@ class Trapezoid:
         return label
     
     def plot(self):
-        LineSegment(*self.vertical_line_intersections(self.leftp.x)).plot()
-        LineSegment(*self.vertical_line_intersections(self.rightp.x)).plot()
-        self.upper.plot()
-        self.lower.plot()
+        left = LineSegment(*self.vertical_line_intersections(self.leftp.x))
+        right = LineSegment(*self.vertical_line_intersections(self.rightp.x))
+        upper = LineSegment(left.start.x, left.start.y, right.start.x, right.start.y)
+        lower = LineSegment(left.end.x, left.end.y, right.end.x, right.end.y)
+        left.plot(marker=False), right.plot(marker=False), upper.plot(marker=False), lower.plot(marker=False)
 
     def vertical_line_intersections(self, p):
         return *self.upper.intersect_vertical_line(p), *self.lower.intersect_vertical_line(p)
