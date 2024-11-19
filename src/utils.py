@@ -134,6 +134,9 @@ def run_algorithm(point, line_segments, show_plot=False, write_result_to_file=Fa
 
     # Query search structure
     region = D._find_region(point)
+    print()
+    print("the query point lies within:")
+    print(region.data) # prints the trapezoid the point is located in 
 
     # if wanted writes output to file 
     if write_result_to_file:
