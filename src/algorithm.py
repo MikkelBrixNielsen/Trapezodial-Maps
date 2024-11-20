@@ -114,7 +114,8 @@ def BTM(linesegments, debug=False):
 
         SS.insert(s, debug)
 
-        # if DEBUG:
+        if DEBUG:
+            print_SS(SS)
         #    print_each_trap(SS)
 
     if DEBUG:
