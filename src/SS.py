@@ -1,5 +1,5 @@
 from objects import Trapezoid, LineSegment, Point
-from main import DEBUG
+DEBUG = False
 
 class Node:
     def __init__(self, data=None, left=None, right=None):
@@ -12,6 +12,9 @@ class Node:
         self.data = data
         self.left = left
         self.right = right
+
+    def childless_copy(self):
+        return Node(self.data)
 
     def print(self):
         print(f"Node(\n\tdata: {self.data}\n\t left: {self.left}\n\t right: {self.right})")
@@ -199,31 +202,27 @@ class SearchStructure:
         C.data.rightN = [C_last, C.data.rightN[0]] if C.data.rightN else [C_last] #and len(C.data.rightN) == 2 else [C_last] # probably overkill
             
 
-    def insert(self, seg):
+    def insert(self, seg, debug=False):
+        global DEBUG
+        DEBUG = debug
         print("INSERTING: ", seg)
         node = self._find_region(seg.start) # get region for point (delta_0) - Trapezoid is node.data
-        seg_node = Node(seg) # create node for the segment s_i
+        #seg_node = Node(seg) # create node for the segment s_i
         traps = self._follow_segment(node, seg) # traps is a list of nodes of the trapezoids which follow s_i
 
         if len(traps) > 1:
             
             # Handle delta_0
-            A, B, C = self._create_trapezoids(traps[0], seg_node, traps[0].data, is_first=True) # delta_0
-            traps[0].overwrite(seg.start, A, seg_node) # overwrite delta_0 with p
+            A, B, C = self._create_trapezoids(traps[0], seg, traps[0].data, is_first=True) # delta_0
+            traps[0].overwrite(seg.start, A, Node(seg, B, C)) # overwrite delta_0 with p
             # D --> p2<(C,s2)
-            seg_node.left = B # above
-            seg_node.right = C # below
             # s2<(D,F)
+
 
             # Handling delta_k
             A_last, B_last, C_last = self._create_trapezoids(traps[-1], seg_node, traps[-1].data, is_first=False) # delta_k
-            traps[-1].overwrite(seg.end, seg_node, A_last) # overwrite delta_k with p
-            # B --> q2<(s2,G)
-
-            # NEEDS TO BE OTHER SEG_NODE WITH THE SAME DATA BEING "s2"
-            seg_node.left = B_last # above
-            seg_node.right = C_last # below
-            # s2<(E,F)
+            traps[-1].overwrite(seg.end, Node(seg, B_last, C_last), A_last) # overwrite delta_k with p
+            # B --> q2<(s2<(E,F),G)
 
             # Handle delta_1->delta_k-1
             above = None

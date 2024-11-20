@@ -2,9 +2,9 @@ import random
 from objects import LineSegment, Trapezoid, Point
 from SS import SearchStructure
 import matplotlib.pyplot as plt
-from main import DEBUG
 
 BB = None
+DEBUG = False
 
 ################################################### DEBUG METHODS ##################################################
 def print_border():
@@ -97,7 +97,9 @@ def initialization(linesegments):
     SS = SearchStructure(BB)
     return SS, perm
 
-def BTM(linesegments):
+def BTM(linesegments, debug=False):
+    global DEBUG
+    DEBUG = debug
     order = [] # for debugging    
     SS, queue = initialization(linesegments)
     if DEBUG:
@@ -110,7 +112,7 @@ def BTM(linesegments):
             print(f"Inserting line segment {s}...")
             order.append(s)
 
-        SS.insert(s)
+        SS.insert(s, debug)
 
         # if DEBUG:
         #    print_each_trap(SS)
