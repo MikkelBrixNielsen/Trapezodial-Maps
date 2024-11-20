@@ -2,6 +2,7 @@ import random
 from objects import LineSegment, Trapezoid, Point
 from SS import SearchStructure
 import matplotlib.pyplot as plt
+from main import DEBUG
 
 BB = None
 
@@ -96,27 +97,27 @@ def initialization(linesegments):
     SS = SearchStructure(BB)
     return SS, perm
 
-def BTM(linesegments, debug=False):
+def BTM(linesegments):
     order = [] # for debugging    
     SS, queue = initialization(linesegments)
-    if debug:
+    if DEBUG:
         #plot_line_segments(linesegments)
         # print_queue_and_SS(queue, SS)
         display_SS(SS)
 
     for s in queue:
-        if debug:
+        if DEBUG:
             print(f"Inserting line segment {s}...")
             order.append(s)
 
-        SS.insert(s, debug=debug)
+        SS.insert(s)
 
-        #if debug:
+        # if DEBUG:
         #    print_each_trap(SS)
 
-    if debug:
-        #print_SS(SS)
+    if DEBUG:
+        print_SS(SS)
         for s in order:
             print(s)
 
-    return SS.get_TM(debug), SS
+    return SS.get_TM(), SS

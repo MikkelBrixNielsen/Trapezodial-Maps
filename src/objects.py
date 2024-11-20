@@ -57,6 +57,10 @@ class Trapezoid:
         lower = LineSegment(left.end.x, left.end.y, right.end.x, right.end.y)
         left.plot(marker=False), right.plot(marker=False), upper.plot(marker=False), lower.plot(marker=False)
 
+        if not self.label == "R0":
+            Point((self.rightp.x + self.leftp.x) / 2, ((self.upper.start.y + self.upper.end.y)/2 + (self.lower.start.y + self.lower.end.y)/2) / 2).plot(self.label)
+
+
     def vertical_line_intersections(self, p):
         return *self.upper.intersect_vertical_line(p), *self.lower.intersect_vertical_line(p)
     
@@ -64,11 +68,14 @@ class Trapezoid:
         s = []
         if neigh:
             for n in neigh:
-                s.append(str(n.data.__class__.__name__))
+                if isinstance(n.data, Trapezoid):
+                    s.append(f"{n.data.label}")
+                else:
+                    s.append(str(n.data.__class__.__name__))
         return s
     
     def __str__(self, indent=""):
-        return f'Trapezoid(\n\t{indent}upper: {self.upper}\n\t{indent}lower: {self.lower}\n\t{indent}leftp: {self.leftp}\n\t{indent}rightp: {self.rightp}\n\t{indent}rightN: {self._print_neighbours(self.rightN)}\n\t{indent}leftN: {self._print_neighbours(self.leftN)}\n{indent})'
+        return f'Trapezoid(\n\t{indent}upper: {self.upper}\n\t{indent}lower: {self.lower}\n\t{indent}leftp: {self.leftp}\n\t{indent}rightp: {self.rightp}\n\t{indent}label: {self.label}\n\t{indent}rightN: {self._print_neighbours(self.rightN)}\n\t{indent}leftN: {self._print_neighbours(self.leftN)}\n{indent})'
     
     def to_string_with_indent(self, indent):
         return self.__str__(indent)

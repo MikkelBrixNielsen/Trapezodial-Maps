@@ -4,6 +4,7 @@ import re
 import matplotlib.pyplot as plt
 from objects import LineSegment, Point
 from algorithm import BTM
+from main import DEBUG
 
 # Checks if program is called with correct parameters
 # Returns '-d' in sys.argv, '-p' in sys.argv, '-o' in sys.argv, file_name
@@ -128,9 +129,9 @@ def write_to_file(region):
 
 
 
-def run_algorithm(point, line_segments, show_plot=False, write_result_to_file=False, debug=False):
+def run_algorithm(point, line_segments, show_plot=False, write_result_to_file=False):
     # runs the algorithm resulting in a trapezodial map, T, and a search structure, D.
-    T, D = BTM(line_segments, debug)
+    T, D = BTM(line_segments)
 
     # Query search structure
     region = D._find_region(point)
