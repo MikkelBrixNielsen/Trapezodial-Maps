@@ -69,59 +69,64 @@ class SearchStructure:
             region = self._next_neighbour(region, seg)
         return regions
 
-    def _fix_intermediate_neighbours(self, left: Node, right: Node, is_above):
-        idx = 1 if is_above else 0
-
-        if left.data.rightN and len(left.data.rightN) >= 2:
-            left.data.rightN[idx] = right
-        else:
-            left.data.rightN = [right]
-        
-        if right.data.leftN and len(right.data.leftN) >= 2:
-            right.data.leftN[idx] = left
-        else: 
-            right.data.leftN = [left]
-
     # Tries to merge delta_i with delta_i+1 and returns the trapezoid to continue to try and merge delta_i+2 and so on         
-    def _merge_above_aux(self, node, left_region_node, right_region_node):
+    def _merge_above_aux(self, left_region_node, right_region_node):
         # merging/making trapezoids above/below the segment
         left_region, right_region = left_region_node.data, right_region_node.data
         if left_region.upper == right_region.upper:
             left_region.rightp = right_region.rightp
-            #node.left = left_region_node # FIXME - "burde ikke findes?" - Mikkel
 
             # THE NODE THAT CONTAINS RIGHT REGION IS SET TO CONTAIN LEFT REGION AS DATA, SO 
-            right_region_node.data = left_region_node.data
             # THINGS POINTING TO THAT NODE NOW EFFECTIVELY POINTS TO LEFT REGION INSTEAD OF RIGHT REGION AFTER MERGING
+            right_region_node.data = left_region_node.data
+            
+            left_region.rightN = right_region.rightN # B GETS NEIGHBOURS OF ABOVE
 
-            return left_region_node
-        else: # if not merging with B save current as trapezoid as below as well as the next trapezoid to try and merge with
-            node.left = right_region_node
-            self._fix_intermediate_neighbours(left_region_node, right_region_node, is_above=True)
-            return right_region_node
+            return left_region_node # RETURN B IF MERGING INTO ABOVE
+
+        else:
+            # SINCE IF NOT MERGING, EITHER LEFT_REGION OR RIGHT_REGION ALREADY HAS A NEIGHBOUR, WHICH IS 
+            # THE REGION ABOVE RIGHT_REGION OR LEFT_REGION RESPECTIVELY. HENCE THAT REGION HAS EXACTLY ONE RIGHT OR LEFT NEIGHBOUR,
+            # WHICH IS THEN OUTERMOST REGION STILL RELEVANTLY CLOSE TO THE INSERTED LINE SEGMENT.
+
+            # if B has a right neighbour, it keeps it and gets ABOVE as well, otherwise it just gets ABOVE
+            left_region.rightN = [left_region.rightN[0], right_region_node] if left_region.rightN else [right_region_node]
+            # if ABOVE has a left neighbour, it keeps it and gets B as well, otherwise it just gets B
+            right_region.leftN = [right_region.leftN[0], left_region_node] if right_region.leftN else [left_region_node]
+
+            return right_region_node # RETURN ABOVE IF NO MERGE
     
     # same as _merge_above_aux but checks lower defining line segment
-    def _merge_below_aux(self, node, left_region_node, right_region_node):
+    def _merge_below_aux(self, left_region_node, right_region_node):
         left_region, right_region = left_region_node.data, right_region_node.data
         if left_region.lower == right_region.lower:
             left_region.rightp = right_region.rightp
-            #node.right = left_region_node # FIXME - "burde ikke findes?" - Mikkel
 
             # THE NODE THAT CONTAINS RIGHT REGION IS SET TO CONTAIN LEFT REGION AS DATA, SO 
-            right_region_node.data = left_region_node.data
             # THINGS POINTING TO THAT NODE NOW EFFECTIVELY POINTS TO LEFT REGION INSTEAD OF RIGHT REGION AFTER MERGING
+            right_region_node.data = left_region_node.data
 
-            return left_region_node
+            left_region.rightN = right_region.rightN # C GETS NEIGHBOURS OF BELOW
+
+            return left_region_node # RETURN C IF MERGING INTO BELOW
+        
         else:
-            node.right = right_region_node
-            self._fix_intermediate_neighbours(left_region_node, right_region_node, is_above=False)
-            return right_region_node
+            # SINCE IF NOT MERGING, EITHER LEFT_REGION OR RIGHT_REGION ALREADY HAS A NEIGHBOUR, WHICH IS 
+            # THE REGION BELOW RIGHT_REGION OR LEFT_REGION RESPECTIVELY. HENCE THAT REGION HAS EXACTLY ONE RIGHT OR LEFT NEIGHBOUR,
+            # WHICH IS THEN OUTERMOST REGION STILL RELEVANTLY CLOSE TO THE INSERTED LINE SEGMENT.
 
-    def _merge_trapezoids(self, node, left_region_node, right_region_node, is_above):
+            # if C has a right neighbour, it keeps it and gets BELOW as well, otherwise it just gets BELOW
+            left_region.rightN = [right_region_node, left_region.rightN[0]] if left_region.rightN else [right_region_node]
+            # if BELOW has a left neighbour, it keeps it and gets C as well, otherwise it just gets C
+            right_region.leftN = [left_region_node, right_region.leftN[0]] if right_region.leftN else [left_region_node]
+
+            return right_region_node # RETURN BELOW IF NO MERGE
+
+    def _merge_trapezoids(self, left_region_node, right_region_node, is_above):
         if is_above:
-            return self._merge_above_aux(node, left_region_node, right_region_node)
+            return self._merge_above_aux(left_region_node, right_region_node)
         else:
-            return self._merge_below_aux(node, left_region_node, right_region_node)
+            return self._merge_below_aux(left_region_node, right_region_node)
 
     def _create_trapezoids_first(self, trap, seg):
         # Make three new trapezoids (for delta_0 aka first trapezoid)
@@ -182,31 +187,15 @@ class SearchStructure:
         else: 
             return self._create_trapezoids_last(trap, seg)
     
-    # assumed input is (B, B_last) or (C, C_last)
-    def _final_merge(self, left_region_node, right_region_node, is_above):
-        left_region, right_region = left_region_node.data, right_region_node.data
-
-        if ((is_above and left_region.upper == right_region.upper) or 
-            ((not is_above) and left_region.lower == right_region.lower)):
-            left_region.rightp = right_region.rightp
-            left_region.rightN = right_region.rightN
-            right_region.rightN[0].data.leftN[0 if is_above else 1] = left_region_node
-            
-            # THE NODE THAT CONTAINS RIGHT REGION IS SET TO CONTAIN LEFT REGION AS DATA, SO 
-            right_region_node.data = left_region 
-            # THINGS POINTING TO THAT NODE NOW EFFECTIVELY POINTS TO LEFT REGION INSTEAD OF RIGHT REGION AFTER MERGING
-        else:
-            self._fix_intermediate_neighbours(left_region_node, right_region_node, is_above)
-
-    def _fix_final_neighbours(self, B_left, C_left, B_right, C_right):
-        # assigns neigbhours to B_last and C_last - one has been given the outermost region prior 
-        # (which depends on whether the segment is inserted above or below leftp of delta_k) - FIXME / W.I.P.
+    def _fix_neighbours(self, B_left, C_left, B_right, C_right):
+        # assigns neigbhours to B_right and C_right - one has been given the outermost region prior 
+        # (which depends on whether the segment is inserted above or below the leftp of delta_i)
         B_right.data.leftN = [B_right.data.leftN[0], B_left] if B_right.data.leftN else [B_left]
         C_right.data.leftN = [C_left, C_right.data.leftN[1]] if C_right.data.leftN else [C_left]
+
         # assigns the other way
         B_left.data.rightN = [B_left.data.rightN[0], B_right] if B_left.data.rightN else [B_right]
         C_left.data.rightN = [C_right, C_left.data.rightN[0]] if C_left.data.rightN else [C_right]
-
 
     def insert(self, seg, debug=False):
         global DEBUG
@@ -218,13 +207,16 @@ class SearchStructure:
 
         if len(traps) > 1:
             
-            # Make three new trapezoids for delta_0 - IM PRETTY SURE THIS IS CORRECT
+            # Make three new trapezoids for delta_0
             A, B, C = self._create_trapezoids(seg, traps[0].data, is_first=True) # delta_0
 
-            # Make three new trapezoids for delta_k - IM PRETTY SURE THIS IS CORRECT
+            # Make three new trapezoids for delta_k
             A_last, B_last, C_last = self._create_trapezoids(seg, traps[-1].data, is_first=False) # delta_k
 
-            # Iteratively handle the middle traps FIXME
+            # Update SS at delta_0
+            traps[0].overwrite(seg.start, A, Node(seg, B, C)) # overwrite delta_0 with p and give children
+
+            # Iteratively handle the middle traps FIXME 
             for trap in traps[1:-1]: # if it helps; "trap.data" is the same as "delta_i"
                 current = trap.data # trapezoid 
                 #trap.data = seg # node now representing segment s_i
@@ -236,54 +228,53 @@ class SearchStructure:
                 # if delta_i has two left neighbours
                 if len(current.leftN) == 2:
                     if not self._is_below(current.leftp, seg): # if segment is inserted below the left-defining point of current
-                        #below.data.leftN = [C]
+                        print("YIKES No. 1, THIS IS W.I.P.")
+                        below.data.leftN = [C]
                         above.data.leftN = [current.leftN[0], B]
-                        # NOTE: LHS cannot have more than one neighbour since having so would require two line segments L1, L2 to 
-                        # have the same x value i.e. L1.end.x == L2.start.x (i.e., illegal degeneracy)
+                        # NOTE: upper left neighbour of current cannot have more than one right neighbour, 
+                        # since having so would require two line segments L1, L2 to have the same x value 
+                        # i.e. L1.end.x == L2.start.x, which is an illegal degeneracy
                         above.data.leftN[0].data.rightN = [above]
+                        #^>current.leftN[0].data.rightN = [above]
                     else: # if segment is inserted above the left-defining point of current
-                        #above.data.leftN = [B]
+                        print("YIKES No. 2, THIS IS W.I.P.")
+                        above.data.leftN = [B]
                         below.data.leftN = [C, current.leftN[1]]
-                        # NOTE: LHS cannot have more than one neighbour since having so would require two line segments L1, L2 to 
-                        # have the same x value i.e. L1.end.x == L2.start.x (i.e., illegal degeneracy)
+                        # NOTE: lowe left neighbour of current cannot have more than one right neighbour, 
+                        # since having so would require two line segments L1, L2 to have the same x value 
+                        # i.e. L1.end.x == L2.start.x, which is an illegal degeneracy                        
                         below.data.leftN[1].data.rightN = [below]
+                        #^>current.leftN[1].data.rightN = [below]
+                # THIS CASE IS PROBABLY FINE
                 else: # In this case, current has one left nieghbour, and above/below hasn't been assigned any neighbours so is given B/C
                       # as leftN (respectively) by _fix_final_neighbours. Additionally, B or C will have been given the outmost neighbour
                       # of the prior region.
-                    self._fix_final_neighbours(B, C, above, below)
+                    self._fix_neighbours(B, C, above, below)
+
+                # if delta_i has two right neighbours - FIXME - THIS IS W.I.P. 
+                # NOTE: THIS MIGHT BE FIXED BY DOING OTHER STUFF SO MIGHT NOT BE NEEDED
+                #if len(current.rightN) == 2:
+                #    if not self._is_below(current.leftp, seg): # if segment is inserted below the left-defining point of current
+                #        below.data.leftN = [current.right[1]]
+                #        above.data.leftN = [current.leftN[0], B]
 
                 # Trying to merge the delta_i and delta_i+1 above and below the segment
-                B = self._merge_trapezoids(trap, B, above, is_above=True)
+                B = self._merge_trapezoids(B, above, is_above=True)
                 if DEBUG:
                     self.show()
-                C = self._merge_trapezoids(trap, C, below, is_above=False)
+                C = self._merge_trapezoids(C, below, is_above=False)
                 if DEBUG:
                     self.show()
                 # B/C = IS EITHER MERGED INTO ABOVE/BELOW AND RETURNED OR NOT MERGED BUT REASSIGNED TO ABOVE/BELOW RESPECTIVELY
-                trap.overwrite(seg, B, C)
-
-            self._fix_final_neighbours(B, C, B_last, C_last)
-
-            # Trying to merge the second to last and last trapezoid above and below the segment
-            self._final_merge(B, B_last, is_above=True)
-            if DEBUG:
-                print("after final merge B and B_last")
-                self.show()
-            self._final_merge(C, C_last, is_above=False)
-            if DEBUG:
-                print("after final merge C and C_last")
-                self.show()
+                trap.overwrite(seg, B, C) # TRAP_I GETS OVERWRITTEN AND IS GIVEN TWO CHILDREN BEING ABOVE+C OR B+BELOW DEPENDING ON HOW/WHERE MERGING IS DONE
             
-            traps[0].overwrite(seg.start, A, Node(seg, B, C)) # overwrite delta_0 with p
-            # D --> p2<(C,s2)
-            #       s2<(D,F)
-            traps[-1].overwrite(seg.end, Node(seg, B_last, C_last), A_last) # overwrite delta_k with p
-            # B --> q2<(s2,G)
-            #       s2<(E,F)
+            B = self._merge_trapezoids(B, B_last, is_above=True)
+            C = self._merge_trapezoids(C, C_last, is_above=False)
+
+            # Update SS at delta_k
+            traps[-1].overwrite(seg.end, Node(seg, B, C), A_last) # overwrite delta_k with p
 
             #self.show()
-
-
 
         else: # traps <= 1, so entire segment is contained within a single trapezoid / region
             if DEBUG:
