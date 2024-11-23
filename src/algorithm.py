@@ -120,20 +120,21 @@ def BTM(point, linesegments, debug=False):
         display_SS(SS)
         print_border()
 
-
     for s in queue:
         if DEBUG:
             print(f"Inserting line segment {s}...")
             order.append(s)
+        
         SS.insert(s, debug)
-        if DEBUG:
+        
+        #if DEBUG:
             #print_SS(SS)
             # print_each_trap(SS)
-            print("-"*151)
+            #print("-"*151)
 
+    #if DEBUG:
+        #print_SS(SS)
+        #print_order(order)
 
-    if DEBUG:
-        # print_SS(SS)
-        print_order(order)
-
+    display_SS(SS)
     return SS.get_TM(), SS
