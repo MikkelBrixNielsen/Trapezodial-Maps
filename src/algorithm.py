@@ -8,7 +8,7 @@ DEBUG = False
 
 ################################################### DEBUG METHODS ##################################################
 def print_border():
-    print(98 * "-")
+    print(151 * "-")
     
 def print_borders(method, arg):
     print_border()
@@ -59,6 +59,14 @@ def plot_line_segments(segments):
     BB.plot()
     plt.show()
 
+def print_order_aux(line_segments):
+    print("The order the line segments were inserted:")
+    for i in range(len(line_segments)):
+        print(f"{i}: {line_segments[i]}")
+
+def print_order(line_segments):
+    print()
+    print_borders(print_order_aux, line_segments)
 ##################################################################################################################
 
 def extract_points(linesegments):
@@ -79,8 +87,10 @@ def find_min_max(points):
 
     return x_min, x_max, y_min, y_max
 
-def create_bounding_box(linesegments):
+def create_bounding_box(point, linesegments):
     x_min, x_max, y_min, y_max = find_min_max(extract_points(linesegments))
+    x_min, x_max = min(x_min, point.x), max(x_max, point.x)
+    y_min, y_max = min(y_min, point.y), max(y_max, point.y)
     # make bounding box slightly larger than found coordinates 
     x_min, x_max, y_min, y_max = x_min - 1, x_max + 1, y_min - 1, y_max + 1
     # create bounding box trapezoid
@@ -91,36 +101,39 @@ def create_bounding_box(linesegments):
 def generate_random_perm(linesegments):
     return random.sample(linesegments, len(linesegments))
 
-def initialization(linesegments):
+def initialization(point, linesegments):
     global BB
-    BB, perm = create_bounding_box(linesegments), generate_random_perm(linesegments)
+    BB, perm = create_bounding_box(point, linesegments), generate_random_perm(linesegments)
     SS = SearchStructure(BB)
     return SS, perm
 
-def BTM(linesegments, debug=False):
+def BTM(point, linesegments, debug=False):
     global DEBUG
     DEBUG = debug
     order = [] # for debugging    
-    SS, queue = initialization(linesegments)
+    SS, queue = initialization(point, linesegments)
     if DEBUG:
+        print_border()
         #plot_line_segments(linesegments)
         # print_queue_and_SS(queue, SS)
+        print("Before any insertion (bounding box):")
         display_SS(SS)
+        print_border()
+
 
     for s in queue:
         if DEBUG:
             print(f"Inserting line segment {s}...")
             order.append(s)
-
         SS.insert(s, debug)
-
         if DEBUG:
-            print_SS(SS)
-        #    print_each_trap(SS)
+            #print_SS(SS)
+            # print_each_trap(SS)
+            print("-"*151)
+
 
     if DEBUG:
-        print_SS(SS)
-        for s in order:
-            print(s)
+        # print_SS(SS)
+        print_order(order)
 
     return SS.get_TM(), SS

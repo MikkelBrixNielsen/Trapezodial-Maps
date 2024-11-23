@@ -177,7 +177,7 @@ class SearchStructure:
 
             else: # leftp of trap is below seg
                 trap.leftN[1].data.rightN = [C] # give the lower left neighbour delta_k to C (the farthest relevant region from inserted segment)
-                C.leftN = [trap.leftN[1]] # also the other way
+                C.data.leftN = [trap.leftN[1]] # also the other way
 
         return A, B, C
     
@@ -187,15 +187,15 @@ class SearchStructure:
         else: 
             return self._create_trapezoids_last(trap, seg)
     
-    def _fix_neighbours(self, B_left, C_left, B_right, C_right):
-        # assigns neigbhours to B_right and C_right - one has been given the outermost region prior 
-        # (which depends on whether the segment is inserted above or below the leftp of delta_i)
-        B_right.data.leftN = [B_right.data.leftN[0], B_left] if B_right.data.leftN else [B_left]
-        C_right.data.leftN = [C_left, C_right.data.leftN[1]] if C_right.data.leftN else [C_left]
+    # def _fix_neighbours(self, B_left, C_left, B_right, C_right):
+    #     # assigns neigbhours to B_right and C_right - one has been given the outermost region prior 
+    #     # (which depends on whether the segment is inserted above or below the leftp of delta_i)
+    #     B_right.data.leftN = [B_right.data.leftN[0], B_left] if B_right.data.leftN else [B_left]
+    #     C_right.data.leftN = [C_left, C_right.data.leftN[1]] if C_right.data.leftN else [C_left]
 
-        # assigns the other way
-        B_left.data.rightN = [B_left.data.rightN[0], B_right] if B_left.data.rightN else [B_right]
-        C_left.data.rightN = [C_right, C_left.data.rightN[0]] if C_left.data.rightN else [C_right]
+    #     # assigns the other way
+    #     B_left.data.rightN = [B_left.data.rightN[0], B_right] if B_left.data.rightN else [B_right]
+    #     C_left.data.rightN = [C_right, C_left.data.rightN[0]] if C_left.data.rightN else [C_right]
 
     def insert(self, seg, debug=False):
         global DEBUG
@@ -228,36 +228,29 @@ class SearchStructure:
                 # if delta_i has two left neighbours
                 if len(current.leftN) == 2:
                     if not self._is_below(current.leftp, seg): # if segment is inserted below the left-defining point of current
-                        print("YIKES No. 1, THIS IS W.I.P.")
-                        below.data.leftN = [C]
-                        above.data.leftN = [current.leftN[0], B]
-                        # NOTE: upper left neighbour of current cannot have more than one right neighbour, 
-                        # since having so would require two line segments L1, L2 to have the same x value 
-                        # i.e. L1.end.x == L2.start.x, which is an illegal degeneracy
-                        above.data.leftN[0].data.rightN = [above]
-                        #^>current.leftN[0].data.rightN = [above]
+                        above.data.leftN = [current.leftN[0]]
+                        current.leftN[0].data.rightN = [above]
                     else: # if segment is inserted above the left-defining point of current
-                        print("YIKES No. 2, THIS IS W.I.P.")
-                        above.data.leftN = [B]
-                        below.data.leftN = [C, current.leftN[1]]
-                        # NOTE: lowe left neighbour of current cannot have more than one right neighbour, 
-                        # since having so would require two line segments L1, L2 to have the same x value 
-                        # i.e. L1.end.x == L2.start.x, which is an illegal degeneracy                        
-                        below.data.leftN[1].data.rightN = [below]
-                        #^>current.leftN[1].data.rightN = [below]
-                # THIS CASE IS PROBABLY FINE
-                else: # In this case, current has one left nieghbour, and above/below hasn't been assigned any neighbours so is given B/C
+                        below.data.leftN = [current.leftN[1]]
+                        current.leftN[1].data.rightN = [below]
+                # if delta_i has two right neighbours - FIXME - W.I.P
+                if len(current.rightN) == 2:
+                    if not self._is_below(current.rightp, seg): # if segment is inserted below the right-defining point of current
+                        # Give above the outermost region (relative to the inserted segment) to above as right-neighbour
+                        above.data.rightN = [current.rightN[0]] # this should result in above getting two right neighbours by _merge_trapezoids()
+                        current.rightN[0].data.leftN = [above]
+                    else: # if segment is inserted above the right-defining point of current
+                        # Give above the outermost region (relative to the inserted segment) to below as right-neighbour
+                        below.data.rightN = [current.rightN[1]] # this should result in below getting two right neighbours by _merge_trapezoids()
+                        current.rightN[1].data.leftN = [below]
+
+
+                # FIXME: THIS MIGHT BE REDUNDANT BUT IF NOT FIGURE OUT WHERE TO PLACE IT 
+                #else: # In this case, current has one left nieghbour, and above/below hasn't been assigned any neighbours so is given B/C
                       # as leftN (respectively) by _fix_final_neighbours. Additionally, B or C will have been given the outmost neighbour
                       # of the prior region.
-                    self._fix_neighbours(B, C, above, below)
-
-                # if delta_i has two right neighbours - FIXME - THIS IS W.I.P. 
-                # NOTE: THIS MIGHT BE FIXED BY DOING OTHER STUFF SO MIGHT NOT BE NEEDED
-                #if len(current.rightN) == 2:
-                #    if not self._is_below(current.leftp, seg): # if segment is inserted below the left-defining point of current
-                #        below.data.leftN = [current.right[1]]
-                #        above.data.leftN = [current.leftN[0], B]
-
+                    #self._fix_neighbours(B, C, above, below)
+                    
                 # Trying to merge the delta_i and delta_i+1 above and below the segment
                 B = self._merge_trapezoids(B, above, is_above=True)
                 if DEBUG:
@@ -330,36 +323,39 @@ class SearchStructure:
             print(f"#traps: {len(traps)}")
             self.show()
 
-    def _get_TM_aux(self, current):
-        if not (current.left and current.right): # has no left or right children => is leaf => trapezoid
-            return [current.data] # extracts trapezoid from node
+###################################### METHODS FOR SHOWING / retrieving D AND T ######################################
+    def _get_TM_aux(self, current: Node):
+        if (not current.left) and (not current.right): # Trapezoid nodes do not have left right children
+            if not current.data.collected: # ensures each trapezoid is only collected once for display purposes
+                current.data.collected = True
+                return [current.data] 
+            else:
+                return []
         else:
             return self._get_TM_aux(current.left) + self._get_TM_aux(current.right)
 
     def get_TM(self):
+        traps = self._get_TM_aux(self.root)
         if DEBUG:
-            print(f"#traps in trapmap: {len(self._get_TM_aux(self.root))}")
-        return self._get_TM_aux(self.root)
+            print(f"There are #{len(traps)} in the trapezodial map")
+        return traps
     
-    def _show_aux(self, current, level=0, s="Root: "):
+    def _to_string_aux(self, current, level=0, s="Root: ", string=""):
         if not (current and current.data):
-            return
+            return ""
         indent = "    " * level
         if current.data.__class__.__name__.lower() == "trapezoid":
-            print(indent + s + current.data.to_string_with_indent(indent))
+            string += (indent + s + current.data.to_string_with_indent(indent))  + "\n"
         else:
-            print(indent + s + str(current.data))
+            string += (indent + s + str(current.data)) + "\n"
 
-        self._show_aux(current.left, level+1, s="L: |--->")
-        self._show_aux(current.right, level+1, s="R: |--->")
+        string += self._to_string_aux(current.left, level+1, s="L: |--->")
+        string += self._to_string_aux(current.right, level+1, s="R: |--->")
+        return string
+    
+    def to_string(self, current):
+        return self._to_string_aux(current).strip()
 
     def show(self):
-        print("\n")
-        self._show_aux(current=self.root)
-        print("\n")
-
-# FIXME: ENSURE THE CORRECTNESS OF GET_TM
-# FIXME: ENSURE SIDE EFFECTS ARE ACUALLY TAKING PLACE 
-# FIXME: GO THROUGH INSERT TO MAKE SURE IT ACTUALLY DOES WHAT IT IS SUPPOSED TO DO
-# FIXME: CHECK NEIGHBOURS FOR TRAPEZOIDS
-# FIXME: ENSURE THAT TRAPEZOIDS ARE MADE WITH REGARDS TO EXISTING TRAPEZOIDS
+        print(self.to_string(current=self.root))
+#########################################################################################################

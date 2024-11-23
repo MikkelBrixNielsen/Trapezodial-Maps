@@ -3,7 +3,7 @@ import os
 import re
 import matplotlib.pyplot as plt
 from objects import LineSegment, Point
-from algorithm import BTM
+from algorithm import BTM, print_borders, print_border
 
 # Checks if program is called with correct parameters
 # Returns '-d' in sys.argv, '-p' in sys.argv, '-o' in sys.argv, file_name
@@ -116,39 +116,34 @@ def create_line_segments_and_point(content): # O(n)
     check_output(point, line_segments) # O(1)
     return point, line_segments  
 
-
-
-
-
-# FIXME implement
-def write_to_file(region):
-    pass
-
-
-
-
+def write_to_file(point, region, line_segments, T, D):
+    with open("output.txt", "w") as file:
+        display_plot(point, line_segments, T, save=True) # saves plot as a png
+        output_string = 151*"-" + f"\nThe query point: {point} lies within: {region.data.label}\n" + 151*"-" + "\n\n" + 60*"-" + "The resulting search structure:" + 60*"-" + f"\n{D.to_string(D.root)}\n" + 151*"-"
+        file.write(output_string)
 
 def run_algorithm(point, line_segments, show_plot=False, write_result_to_file=False, debug=False):
     # runs the algorithm resulting in a trapezodial map, T, and a search structure, D.
-    T, D = BTM(line_segments)
+    T, D = BTM(point, line_segments, debug)
 
     # Query search structure
     region = D._find_region(point)
-    print()
-    print("the query point lies within:")
-    print(region.data) # prints the trapezoid the point is located in 
+    if debug:
+        print("\n")
+        print_border()
+        print(72*" " + "RESULTS" + 72*" ")
+        print_borders(print, f"The query point: {point} lies within {region.data.label}:\n\n{str(region.data).strip()}") # prints the trapezoid the point is located in 
 
     # if wanted writes output to file 
     if write_result_to_file:
-        write_to_file(region)
+        write_to_file(point, region, line_segments, T, D)
 
     # if wanted displays plot of trapazoid map
-    # TODO: Should be changed to do trapezoid plot instead
     if show_plot:
         display_plot(point, line_segments, T) # O(n)
 
 # displays a plot given a point and some line segments
-def display_plot(point, line_segments, T): # O(n)
+def display_plot(point, line_segments, T, save=False): # O(n)
     # plots the point
     point.plot("q") # O(1)
 
@@ -164,5 +159,8 @@ def display_plot(point, line_segments, T): # O(n)
     plt.xlabel("X-axis")
     plt.ylabel("Y-axis")
 
-    # actually display the plot
-    plt.show()  
+    # save plot if wanted
+    if save:
+        plt.savefig("TrapezoidalMapPlot.png")
+    else: # displays plot
+        plt.show()
