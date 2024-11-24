@@ -398,3 +398,6 @@ FodyWeavers.xsd
 venv/
 src/OtherSS.py
 src/SS copy.py
+TrapezoidalMapPlot.png
+output.txt
+src/old_SS.py

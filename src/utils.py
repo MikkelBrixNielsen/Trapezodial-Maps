@@ -3,6 +3,7 @@ import os
 import re
 import matplotlib.pyplot as plt
 from objects import LineSegment, Point
+from SS import SearchStructure, Node, Trapezoid
 from algorithm import BTM, print_borders, print_border
 
 # Checks if program is called with correct parameters
@@ -36,7 +37,7 @@ def check_usage():
 
     return d_flag, p_flag, o_flag, file_name
 
-def get_content(file_name): # O(n)
+def get_content(file_name: str): # O(n)
     content = ""
     try:
         with open(file_name, 'r') as file:
@@ -49,20 +50,20 @@ def get_content(file_name): # O(n)
         sys.exit(1)
     return content
 
-def try_float_cast(d):
+def try_float_cast(d: int | float):
     try:
         return float(d)
     except ValueError:
         print(f"Error: Could not convert '{d}' to float, maybe a formatting issue in input file.")
         sys.exit(1)
 
-def format_content(content): # O(n)
+def format_content(content: str): # O(n)
     fcontent = re.sub(r'[\t ]+', ' ', content.strip())
     fcontent = fcontent.split("\n")
     fcontent = [l.strip() for l in fcontent]
     return [[try_float_cast(d) if not d == '' and not d == '-' else d for d in l.split(" ")] for l in fcontent]
     
-def check_output(point, line_segments): # O(1)
+def check_output(point: Point, line_segments: LineSegment): # O(1)
     if not point:
         print("Error: No point provided in input file.")
         sys.exit(1)
@@ -85,7 +86,7 @@ def determine_endpoint(p, q):
             print("Error: Multiple points with identical coordiantes defined in input file.")
             sys.exit(1)
 
-def create_line_segments_and_point(content): # O(n)
+def create_line_segments_and_point(content: str): # O(n)
     linenum = 1
     point = None
     line_segments = []
@@ -116,23 +117,26 @@ def create_line_segments_and_point(content): # O(n)
     check_output(point, line_segments) # O(1)
     return point, line_segments  
 
-def write_to_file(point, region, line_segments, T, D):
+def write_to_file(point: Point, region: Node[Trapezoid], line_segments: LineSegment, T: list[Node[Trapezoid]], D: SearchStructure):
     with open("output.txt", "w") as file:
         display_plot(point, line_segments, T, save=True) # saves plot as a png
         output_string = 151*"-" + f"\nThe query point: {point} lies within: {region.data.label}\n" + 151*"-" + "\n\n" + 60*"-" + "The resulting search structure:" + 60*"-" + f"\n{D.to_string(D.root)}\n" + 151*"-"
         file.write(output_string)
 
-def run_algorithm(point, line_segments, show_plot=False, write_result_to_file=False, debug=False):
-    # runs the algorithm resulting in a trapezodial map, T, and a search structure, D.
-    T, D = BTM(point, line_segments, debug)
-
-    # Query search structure
-    region = D._find_region(point)
-    if debug:
+def print_results(point: Point, region: Node[Trapezoid]):
         print("\n")
         print_border()
         print(72*" " + "RESULTS" + 72*" ")
         print_borders(print, f"The query point: {point} lies within {region.data.label}:\n\n{str(region.data).strip()}") # prints the trapezoid the point is located in 
+
+def run_algorithm(point: Point, line_segments: LineSegment, show_plot=False, write_result_to_file=False, debug=False):
+    # runs the algorithm resulting in a trapezodial map, T, and a search structure, D.
+    T, D = BTM(point, line_segments, debug)
+
+    # Query search structure
+    region = D.query(point)
+    if debug:
+        print_results(point, region)
 
     # if wanted writes output to file 
     if write_result_to_file:
@@ -140,20 +144,23 @@ def run_algorithm(point, line_segments, show_plot=False, write_result_to_file=Fa
 
     # if wanted displays plot of trapazoid map
     if show_plot:
-        display_plot(point, line_segments, T) # O(n)
+        display_plot(point, region, line_segments, T) # O(n)
 
 # displays a plot given a point and some line segments
-def display_plot(point, line_segments, T, save=False): # O(n)
-    # plots the point
-    point.plot("q") # O(1)
-
+def display_plot(point: Point, region: Node[Trapezoid], line_segments: LineSegment, T: list[Node], save=False): # O(n)
     # plots all line segments
     for line in line_segments: # O(n)
         line.plot()
 
     # plots all trapezoids
     for trap in T: # O(n)
-        trap.plot()
+        if not (trap == region.data):
+            trap.plot()
+    
+    # plots region point is located in
+    # plots the point
+    point.plot("q", "blue") # O(1)
+    region.data.plot()
     
     # lables for x and y axis
     plt.xlabel("X-axis")

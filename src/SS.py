@@ -40,13 +40,13 @@ class SearchStructure:
     # find next neighbor in regards to s_i
     def _next_neighbour(self, region: Node[Trapezoid], seg: LineSegment) -> Node[Trapezoid] | None:
         # if trapezoid has rightN return 0th / 1st neighbour if rightp below / above segment, unless len(rightN) == 1 then just return 0th neighbour otherwise None
-        return (region.data.rightN[0] if self._is_below(region.data.rightp, seg) or len(region.data.rightN) == 1 else region.data.rightN[1]) if region.data.rightN else None
+        return None if not region.data.rightN else (region.data.rightN[0] if self._is_below(region.data.rightp, seg) or len(region.data.rightN) == 1 else region.data.rightN[1])
 
-    def _follow_segment(self, region: Node[Trapezoid], seg: LineSegment) -> list[Node]:
+    def _follow_segment(self, region: Node[Trapezoid], seg: LineSegment) -> list[Node[Trapezoid]]:
         regions = []
         current = region
         # appends delta_0 -> delta_k-1 - these regions are intersected by s_i
-        while current and (not seg.end.x < current.data.leftp.x):
+        while current and (current.data.leftp.x < seg.end.x):
             regions.append(current)
             current = self._next_neighbour(current, seg)
         return regions
@@ -54,13 +54,33 @@ class SearchStructure:
     def _find_intersected_trapezoids(self, seg: LineSegment) -> list[Node[Trapezoid]]:
         return self._follow_segment(self._find_region(seg.start), seg) # find  region for start point of segment and use it to find trapezoids which follow s_i
 
+    # Point is left-/right-defining point of current  X = B / above, Y = C / below
+    def _assign_outer_neighbours_aux(self, current: Trapezoid, X: Node[Trapezoid], Y: Node[Trapezoid], 
+                                     L_or_R: str, L_or_R_flipped: str, point: Point, seg: LineSegment) -> None:
+        currentN = getattr(current, L_or_R)
+        if currentN and len(currentN) == 2:
+            if not self._is_below(point, seg): # if segment is inserted below the left/right-defining point of current => X receives outermost neighbour
+                setattr(currentN[0].data, L_or_R_flipped, [X])
+                setattr(X.data, L_or_R, [currentN[0]])
+            else: # if segment is inserted above the (left/right)-defining point of current => Y receives outermost neighbour
+                setattr(currentN[1].data, L_or_R_flipped, [Y])
+                setattr(Y.data, L_or_R, [currentN[1]])
 
+    def _assign_outermost_neighbour_left(self, current: Trapezoid, X: Node[Trapezoid], Y: Node[Trapezoid], seg: LineSegment) -> None:
+        self._assign_outer_neighbours_aux(current, X, Y, 'leftN', 'rightN', current.leftp, seg)
 
+    def _assign_outermost_neighbour_right(self, current: Trapezoid, X: Node[Trapezoid], Y: Node[Trapezoid], seg: LineSegment) -> None:
+        self._assign_outer_neighbours_aux(current, X, Y, 'rightN', 'leftN', current.rightp, seg)
 
+    def _split_into_above_below(self, current: Trapezoid, seg: LineSegment) -> tuple[Node[Trapezoid], Node[Trapezoid]]:
+        above = Node(Trapezoid(current.upper, seg, current.leftp, current.rightp))
+        below = Node(Trapezoid(seg, current.lower, current.leftp, current.rightp))
+        # Assings left- / right-outermost neighbours to above and below
+        self._assign_outermost_neighbour_left(current, above, below, seg)
+        self._assign_outermost_neighbour_right(current, above, below, seg)
+        return above, below
 
-
-    # FIXME: CHECK THAT THIS ACUTALLY WORKS
-    def _merge_traps_aux(self, LTN: Node, RTN: Node, is_above: bool) -> Node[Trapezoid]:
+    def _merge_traps_aux(self, LTN: Node[Trapezoid], RTN: Node[Trapezoid], is_above: bool) -> Node[Trapezoid]:
         left, right = LTN.data, RTN.data # LTN = B / C, RTN = above / below
         can_merge = left.upper == right.upper if is_above else left.lower == right.lower
         if can_merge: # they share seg as lower or upper so sharing the other => can be merged
@@ -69,89 +89,19 @@ class SearchStructure:
             RTN.data = left # since left and right merged everything that pointed to right's node which now has left's data so effectively everything now points to left instead (different node but both contain left's data)
             return LTN
         else:
-            #left.rightN = ([left.rightN[0], RTN] if is_above else [RTN, left.rightN[0]]) if left.rightN else [RTN]
-            #right.leftN = ([right.leftN[0], LTN] if is_above else [LTN, right.leftN[0]]) if right.leftN else [LTN]
+            left.rightN = ([left.rightN[0], RTN] if is_above else [RTN, left.rightN[0]]) if left.rightN else [RTN]
+            right.leftN = ([right.leftN[0], LTN] if is_above else [LTN, right.leftN[0]]) if right.leftN else [LTN]
             return RTN
-
+        
     def _merge_above_traps(self, LTN: Node[Trapezoid], RTN: Node[Trapezoid]) -> Node[Trapezoid]:
         if DEBUG:
             print(f"MERGE ABOVE TRYING:\n{LTN.data.label} -> {RTN.data.label}")
-        res = self._merge_traps_aux(LTN, RTN, is_above=True)
-        if res == RTN:
-            LTN.data.rightN = [LTN.data.rightN[0], RTN] if LTN.data.rightN else [RTN]
-            RTN.data.leftN = [RTN.data.leftN[0], LTN] if RTN.data.leftN else [LTN]
-        return res
+        return self._merge_traps_aux(LTN, RTN, is_above=True)
 
     def _merge_below_traps(self, LTN: Node[Trapezoid], RTN: Node[Trapezoid]) -> Node[Trapezoid]:
         if DEBUG:
             print(f"MERGE BELOW TRYING:\n{LTN.data.label} -> {RTN.data.label}")
-        res = self._merge_traps_aux(LTN, RTN, is_above=False)
-        if res == RTN:
-            LTN.data.rightN = [RTN, LTN.data.rightN[0]] if LTN.data.rightN else [RTN]
-            RTN.data.leftN = [LTN, RTN.data.leftN[0]] if RTN.data.leftN else [LTN]
-        return res
-
-
-
-
-
-
-    # FIXME: CHECK THAT THIS ACUTALLY WORKS
-    # Point is left-/right-defining point of current  X = B / above, Y = C / below
-    def _assign_outer_neighbours_aux(self, current: Trapezoid, X: Node, Y: Node, 
-                                     L_or_R: str, L_or_R_flipped: str, point: Point, seg: LineSegment) -> None:
-        currentN = getattr(current, L_or_R)
-        if currentN and len(currentN) == 2:
-            if not self._is_below(point, seg): # if segment is inserted below the left-defining point of current => X receives outermost neighbour
-                setattr(currentN[0].data, L_or_R_flipped, [X])
-                setattr(X.data, L_or_R, [currentN[0]])
-            else: # if segment is inserted above the (left/right)-defining point of current => Y receives outermost neighbour
-                setattr(currentN[1].data, L_or_R_flipped, [Y])
-                setattr(Y.data, L_or_R, [currentN[1]])
-
-    def _assign_outermost_neighbour_right(self, current: Trapezoid, X: Node[Trapezoid], Y: Node[Trapezoid], seg: LineSegment) -> None:
-        #self._assign_outer_neighbours_aux(current, X, Y, 'rightN', 'leftN', current.rightp, seg)
-        
-        # FOR TESTING PURPOSES
-        if current.rightN and len(current.rightN) == 2:
-            if not self._is_below(current.rightp, seg): # if segment is inserted below the right-defining point of current
-                X.rightN = [current.rightN[0]] # this should result in above getting two right neighbours by _merge_trapezoids()
-                current.rightN[0].data.leftN = [X]
-            else: # if segment is inserted above the right-defining point of current
-                Y.rightN = [current.rightN[1]] # this should result in below getting two right neighbours by _merge_trapezoids()
-                current.rightN[1].data.leftN = [Y]
-
-    def _assign_outermost_neighbour_left(self, current: Trapezoid, X: Node[Trapezoid], Y: Node[Trapezoid], seg: LineSegment) -> None:
-        #self._assign_outer_neighbours_aux(current, X, Y, 'leftN', 'rightN', current.leftp, seg)
-        
-        # FOR TESTING PURPOSES
-        if current.leftN and len(current.leftN) == 2:
-            if not self._is_below(current.leftp, seg): # if segment is inserted below the left-defining point of current
-                X.leftN = [current.leftN[0]]
-                current.leftN[0].data.rightN = [X]
-            else: # if segment is inserted above the left-defining point of current
-                Y.leftN = [current.leftN[1]]
-                current.leftN[1].data.rightN = [Y]
-
-
-
-
-
-
-
-    def _split_into_above_below(self, current: Trapezoid, seg: LineSegment) -> tuple[Node[Trapezoid], Node[Trapezoid]]:
-        above = Node(Trapezoid(current.upper, seg, current.leftp, current.rightp))
-        below = Node(Trapezoid(seg, current.lower, current.leftp, current.rightp))
-        # Assings left- / right-outermost neighbours to above and below
-        self._assign_outermost_neighbour_right(current, above, below, seg)
-        self._assign_outermost_neighbour_left(current, above, below, seg)
-        return above, below
-
-
-
-
-
-
+        return self._merge_traps_aux(LTN, RTN, is_above=False)
 
     def _merge_traps(self, traps: list[Node[Trapezoid]], B: Node[Trapezoid], C: Node[Trapezoid], 
                      BL: Node[Trapezoid], CL: Node[Trapezoid], seg: LineSegment) -> tuple[Node[Trapezoid]]:
@@ -167,13 +117,6 @@ class SearchStructure:
         C = self._merge_below_traps(C, CL)
         return B, C
 
-
-
-
-
-
-    
-    # FIXME: CHECK THAT THIS ACUTALLY WORKS
     def _update_outer_aux(self, current: Trapezoid, L_or_R: str, L_or_R_flipped: str, X: Node[Trapezoid]) -> None:
         currentN = getattr(current, L_or_R)
         if currentN:
@@ -186,44 +129,10 @@ class SearchStructure:
                     setattr(n.data, L_or_R_flipped, [X])
 
     def _update_outer_left_neighbours(self, trap: Trapezoid, X: Node[Trapezoid]) -> None:
-        #self._update_outer_aux(trap, 'leftN', 'rightN', X)
-    
-        # FOR TESTING PURPOSES
-        if trap.leftN:
-            if len(trap.leftN) == 2:
-                trap.leftN[0].data.rightN = [X]
-                trap.leftN[1].data.rightN = [X]
-            else:
-                if trap.leftN[0].data.rightN and len(trap.leftN[0].data.rightN) == 2:
-                    trap.leftN[0].data.rightN[0 if trap.leftN[0].data.rightN[0].data == trap else 1] = X
-                else:
-                    trap.leftN[0].data.rightN = [X]
+        self._update_outer_aux(trap, 'leftN', 'rightN', X)
 
     def _update_outer_right_neighbours(self, trap: Trapezoid, X: Node[Trapezoid]) -> None:
-        #self._update_outer_aux(trap, 'rightN', 'leftN', X)
-        
-        # FOR TESTING PURPOSES
-        if trap.rightN:
-            if len(trap.rightN) >= 2:
-                trap.rightN[0].data.leftN = [X]
-                trap.rightN[1].data.leftN = [X]
-            else:
-                if trap.rightN[0].data.leftN and len(trap.rightN[0].data.leftN) == 2:
-                    trap.rightN[0].data.leftN[0 if trap.rightN[0].data.leftN[0].data == trap else 1] = X
-                else:
-                    trap.rightN[0].data.leftN = [X]
-
-
-
-
-
-
-
-
-
-
-
-
+        self._update_outer_aux(trap, 'rightN', 'leftN', X)
 
     def _handle_first_trap(self, trap: Node[Trapezoid], seg: LineSegment) -> tuple[Node[Trapezoid], Node[Trapezoid], Node[Trapezoid]]:
         delta_0 = trap.data
@@ -250,37 +159,22 @@ class SearchStructure:
                                 ) -> tuple[Node[Trapezoid], Node[Trapezoid], Node[Trapezoid], Node[Trapezoid], Node[Trapezoid], Node[Trapezoid]]:
         return *self._handle_first_trap(traps[0], seg), *self._handle_last_trap(traps[-1], seg)
 
-
-
-
-
-
-
     def _split_trap_into_four(self, trap: Node[Trapezoid], seg:LineSegment
                               ) -> tuple[Node[Trapezoid], Node[Trapezoid], Node[Trapezoid], Node[Trapezoid]]:
         delta = trap.data
         # Make the trapezoids that should replace the previous one and assign neighbours
         A = Node(Trapezoid(delta.upper, delta.lower, delta.leftp, seg.start, leftN=delta.leftN))
         B = Node(Trapezoid(delta.upper, delta.lower, seg.end, delta.rightp, rightN=delta.rightN))
-        C = Node(Trapezoid(delta.upper, seg, seg.start, seg.end, rightN=[B], leftN=[A]))
-        D = Node(Trapezoid(seg, delta.lower, seg.start, seg.end, rightN=[B], leftN=[A]))
+        C = Node(Trapezoid(delta.upper, seg, seg.start, seg.end, leftN=[A], rightN=[B],))
+        D = Node(Trapezoid(seg, delta.lower, seg.start, seg.end, leftN=[A], rightN=[B]))
         A.data.rightN = [C, D]
         B.data.leftN = [C, D]
-        self._assign_outermost_neighbour_left(trap.data, C, D, seg)
-        self._assign_outermost_neighbour_right(trap.data, C, D, seg)
         self._update_outer_left_neighbours(trap.data, A)
         self._update_outer_right_neighbours(trap.data, B)
         return A, B, C, D
 
-
-
-
-
-
-
     # Inserts a line segment into the search structure and updates neighbour-relations
     def insert(self, seg: LineSegment, debug: bool = False) -> None:
-        #print("INSERTING: ", seg)
         global DEBUG
         DEBUG = debug
         traps = self._find_intersected_trapezoids(seg)
@@ -301,19 +195,11 @@ class SearchStructure:
         
         if DEBUG:
             self.show()
-
-
-
-
-
-
-
-
-
-
-
-
-
+    
+    def query(self, point: Point) -> Node[Trapezoid]:
+        region: Node[Trapezoid] = self._find_region(point)
+        region.data.color = "red"
+        return region
 
 ###################################### METHODS FOR SHOWING / retrieving D AND T ######################################
     def _get_TM_aux(self, current: Node) -> list[Node[Trapezoid]]:

@@ -113,8 +113,8 @@ def BTM(point, linesegments, debug=False):
     order = [] # for debugging    
     SS, queue = initialization(point, linesegments)
     if DEBUG:
+        # plot_line_segments(linesegments)
         print_border()
-        #plot_line_segments(linesegments)
         # print_queue_and_SS(queue, SS)
         print("Before any insertion (bounding box):")
         display_SS(SS)
@@ -127,14 +127,14 @@ def BTM(point, linesegments, debug=False):
         
         SS.insert(s, debug)
         
-        #if DEBUG:
-            #print_SS(SS)
+        # if DEBUG:
+            # print_SS(SS)
             # print_each_trap(SS)
-            #print("-"*151)
+            # print("-"*151)
 
-    #if DEBUG:
-        #print_SS(SS)
-        #print_order(order)
+    # if DEBUG:
+        # print_SS(SS)
+        # print_order(order)
+        # display_SS(SS)
 
-    display_SS(SS)
     return SS.get_TM(), SS
