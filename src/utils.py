@@ -72,19 +72,20 @@ def check_output(point: Point, line_segments: LineSegment): # O(1)
         sys.exit(1)
 
 # O(1) since just comparisons
-def determine_endpoint(p, q):
+def determine_endpoint(p, q, linenum):
     if p[0] < q[0]: 
         return p, q     # start point is smallest x
     elif p[0] > q[0]:
         return q, p     # start point is smallest x
-    else:   # both points have same x-value (vertical line segment)
-        if p[1] > q[1]:
-            return p, q     # start point is largest y
-        elif p[1] < q[1]:
-            return q, p     # start point is largest y
-        else:
-            print("Error: Multiple points with identical coordiantes defined in input file.")
-            sys.exit(1)
+    else:
+        print(f"Error: Vertical line defined on line {linenum} in input file.")
+        sys.exit(1)
+    
+    if p[1] > q[1]:
+        return p, q     # start point is largest y
+    else:
+        return q, p     # start point is largest y
+   
 
 def create_line_segments_and_point(content: str): # O(n)
     linenum = 1
@@ -103,7 +104,7 @@ def create_line_segments_and_point(content: str): # O(n)
             sys.exit(1)
         elif num_coords == 4:
             # finds start and endpoint for a line segment
-            start, end = determine_endpoint((elem[0], elem[1]), (elem[2], elem[3]))
+            start, end = determine_endpoint((elem[0], elem[1]), (elem[2], elem[3]), linenum)
             # Creates line segment LineSegment(x1, y1, x2, y2)
             line_segments.append(LineSegment(*start, *end))
         else: # something neither a point nor a line segment was defined in input
@@ -119,8 +120,8 @@ def create_line_segments_and_point(content: str): # O(n)
 
 def write_to_file(point: Point, region: Node[Trapezoid], line_segments: LineSegment, T: list[Node[Trapezoid]], D: SearchStructure):
     with open("output.txt", "w") as file:
-        display_plot(point, line_segments, T, save=True) # saves plot as a png
-        output_string = 151*"-" + f"\nThe query point: {point} lies within: {region.data.label}\n" + 151*"-" + "\n\n" + 60*"-" + "The resulting search structure:" + 60*"-" + f"\n{D.to_string(D.root)}\n" + 151*"-"
+        display_plot(point, region, line_segments, T, save=True) # saves plot as a png
+        output_string = 151*"-" + f"\nThe query point: {point} lies within: {region.data.label}\n\n{region.data}\n" + 151*"-" + "\n\n" + 60*"-" + "The resulting search structure:" + 60*"-" + f"\n{D.to_string(D.root)}\n" + 151*"-"
         file.write(output_string)
 
 def print_results(point: Point, region: Node[Trapezoid]):
@@ -148,18 +149,18 @@ def run_algorithm(point: Point, line_segments: LineSegment, show_plot=False, wri
 
 # displays a plot given a point and some line segments
 def display_plot(point: Point, region: Node[Trapezoid], line_segments: LineSegment, T: list[Node], save=False): # O(n)
-    # plots all line segments
-    for line in line_segments: # O(n)
-        line.plot()
-
-    # plots all trapezoids
+     # plots all trapezoids
     for trap in T: # O(n)
         if not (trap == region.data):
             trap.plot()
     
+    # plots all line segments
+    for line in line_segments: # O(n)
+        line.plot(lw=2)
+
     # plots region point is located in
     # plots the point
-    point.plot("q", "blue") # O(1)
+    point.plot("q", "blue", label_x=5,label_y=5) # O(1)
     region.data.plot()
     
     # lables for x and y axis

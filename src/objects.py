@@ -6,9 +6,9 @@ class Point:
         self.y = y
         self.parent = parent # references to its corresponding line segment 
     
-    def plot(self, label: str = "", color: str = "black"):
+    def plot(self, label: str = "", color: str = "black", label_x: int | float = 0, label_y: int | float = 0):
         plt.plot(self.x, self.y, 'o', color=color, markersize=5)
-        plt.annotate(label, (self.x, self.y), textcoords="offset points", xytext=(0, 10), ha='center')
+        plt.annotate(label, (self.x, self.y), textcoords="offset points", xytext=(label_x, label_y), ha='center')
 
     def __str__(self):
         return f"Point(x: {self.x}, y: {self.y})"
@@ -19,10 +19,10 @@ class LineSegment:
         self.end = Point(x2, y2, self)
         self.color = color
     
-    def plot(self, marker: bool = True):
+    def plot(self, marker: bool = True, lw=1):
         x_coords = [self.start.x, self.end.x]
         y_coords = [self.start.y, self.end.y]
-        plt.plot(x_coords, y_coords, marker='o', linestyle='-', color=self.color) if marker else plt.plot(x_coords, y_coords, linestyle='-', color=self.color)
+        plt.plot(x_coords, y_coords, marker='o', linestyle='-', color=self.color, linewidth=lw) if marker else plt.plot(x_coords, y_coords, linestyle='-', color=self.color, linewidth=lw)
 
     def intersect_vertical_line(self, x: Point):
         slope = (self.end.y - self.start.y) / (self.end.x - self.start.x)
@@ -42,8 +42,8 @@ class Trapezoid:
         self.rightN = rightN # right neighbours 
         self.leftN = leftN # left neighbours
         self.label = self._generate_region_label()
-        self.collected = False
-        self.color = color
+        self.collected = False # flag telling if this trapezoid has been collected when doing the traversal to construct T
+        self.color = color # The color to give the line segments when displaying the trapezoid 
     
     def _generate_region_label(self):
         label = "R" + str(Trapezoid.REGION_COUNT)
@@ -60,7 +60,7 @@ class Trapezoid:
         x_mid = (self.rightp.x + self.leftp.x) / 2
         _ , y_upper = self.upper.intersect_vertical_line(x_mid)
         _ , y_lower = self.lower.intersect_vertical_line(x_mid)
-        Point(x_mid, (y_upper + y_lower) / 2).plot(self.label)
+        Point(x_mid, (y_upper + y_lower) / 2).plot(self.label, "white")
 
     def vertical_line_intersections(self, p: Point):
         return *self.upper.intersect_vertical_line(p), *self.lower.intersect_vertical_line(p)
