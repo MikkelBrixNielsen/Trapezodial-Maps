@@ -4,19 +4,27 @@ import re
 import matplotlib.pyplot as plt
 from objects import LineSegment, Point
 from SS import SearchStructure, Node, Trapezoid
-from algorithm import BTM, print_borders, print_border
+from algorithm import build_TM_and_SS, print_borders, print_border
+
+############################################################################# DEBUG METHODS #############################################################################
+def print_results(point: Point, region: Node[Trapezoid]):
+        print("\n")
+        print_border()
+        print(72*" " + "RESULTS" + 72*" ")
+        print_borders(print, f"The query point: {point} lies within {region.data.label}:\n\n{str(region.data).strip()}") # prints the trapezoid the point is located in 
+#########################################################################################################################################################################
 
 # Checks if program is called with correct parameters
-# Returns '-d' in sys.argv, '-p' in sys.argv, '-o' in sys.argv, file_name
+# Returns '-d' in sys.argv, '-p' in sys.argv, '-o' in sys.argv, '-qo' in sys.argv, file_name
 def check_usage():
-    usage_str = "Usage: python ./src/main.py [optional -d -p -o] <file_name/path>"
+    usage_str = "Usage: python ./src/main.py [optional -d -p -o -qo] <file_name/path>"
     # Ensure there's at least one argument (the file name)
     if len(sys.argv) < 2:
         print(usage_str)
         sys.exit(1)
 
     for option in sys.argv[1:-1]:
-        if option not in ['-d', '-p', '-o']:
+        if option not in ['-d', '-p', '-o', '-qo']:
             print(f"Option '{option}' is not a valid option")
             print(usage_str)
             sys.exit(1)
@@ -24,7 +32,8 @@ def check_usage():
     # Extract the options
     d_flag = '-d' in sys.argv # debug flag
     p_flag = '-p' in sys.argv # plot result flag
-    o_flag = '-o' in sys.argv # output result to text file flag
+    o_flag = '-o' in sys.argv # output result, search structure to output.txt and create image of trapezodal map in TrapezoidalMapPlot.png
+    qo_flag = '-qo' in sys.argv # output only the query result to output.txt no search structure or image
 
     # Extract file name ensuring it is provided
     # file_name should be the last argument after any options
@@ -35,7 +44,7 @@ def check_usage():
         print(usage_str)
         sys.exit(1)
 
-    return d_flag, p_flag, o_flag, file_name
+    return d_flag, p_flag, o_flag, qo_flag, file_name
 
 def get_content(file_name: str): # O(n)
     content = ""
@@ -85,7 +94,6 @@ def determine_endpoint(p, q, linenum):
         return p, q     # start point is largest y
     else:
         return q, p     # start point is largest y
-   
 
 def create_line_segments_and_point(content: str): # O(n)
     linenum = 1
@@ -118,39 +126,20 @@ def create_line_segments_and_point(content: str): # O(n)
     check_output(point, line_segments) # O(1)
     return point, line_segments  
 
-def write_to_file(point: Point, region: Node[Trapezoid], line_segments: LineSegment, T: list[Node[Trapezoid]], D: SearchStructure):
+def write_to_file(point: Point, region: Node[Trapezoid], line_segments: LineSegment, T: list[Node[Trapezoid]], D: SearchStructure, query_only:bool=False): # O(n) if not query_only else O(1)
     with open("output.txt", "w") as file:
-        display_plot(point, region, line_segments, T, save=True) # saves plot as a png
-        output_string = 151*"-" + f"\nThe query point: {point} lies within: {region.data.label}\n\n{region.data}\n" + 151*"-" + "\n\n" + 60*"-" + "The resulting search structure:" + 60*"-" + f"\n{D.to_string(D.root)}\n" + 151*"-"
+        output_string = ""
+        if not query_only: # O(n)
+            display_plot(point, region, line_segments, T, save=True) # saves plot as a png  --- O(n)
+            output_string = 151*"-" + f"\nThe query point: {point} lies within: {region.data.label}\n\n{region.data}\n" + 151*"-" + "\n\n" + 60*"-" + "The resulting search structure:" + 60*"-" + f"\n{D.to_string(D.root)}\n" + 151*"-"
+        else: # O(1)
+            output_string = 151*"-" + f"\nThe query point: {point} lies within: {region.data.label}\n\n{region.data}\n" + 151*"-"
         file.write(output_string)
-
-def print_results(point: Point, region: Node[Trapezoid]):
-        print("\n")
-        print_border()
-        print(72*" " + "RESULTS" + 72*" ")
-        print_borders(print, f"The query point: {point} lies within {region.data.label}:\n\n{str(region.data).strip()}") # prints the trapezoid the point is located in 
-
-def run_algorithm(point: Point, line_segments: LineSegment, show_plot=False, write_result_to_file=False, debug=False):
-    # runs the algorithm resulting in a trapezodial map, T, and a search structure, D.
-    T, D = BTM(point, line_segments, debug)
-
-    # Query search structure
-    region = D.query(point)
-    if debug:
-        print_results(point, region)
-
-    # if wanted writes output to file 
-    if write_result_to_file:
-        write_to_file(point, region, line_segments, T, D)
-
-    # if wanted displays plot of trapazoid map
-    if show_plot:
-        display_plot(point, region, line_segments, T) # O(n)
 
 # displays a plot given a point and some line segments
 def display_plot(point: Point, region: Node[Trapezoid], line_segments: LineSegment, T: list[Node], save=False): # O(n)
-     # plots all trapezoids
-    for trap in T: # O(n)
+    # plots almost all trapezoids
+    for trap in T: # O(n) by theorem 6.3 assuming the implementation is correct and follows the book 
         if not (trap == region.data):
             trap.plot()
     
@@ -161,7 +150,7 @@ def display_plot(point: Point, region: Node[Trapezoid], line_segments: LineSegme
     # plots region point is located in
     # plots the point
     point.plot("q", "blue", label_x=5,label_y=5) # O(1)
-    region.data.plot()
+    region.data.plot() # O(1)
     
     # lables for x and y axis
     plt.xlabel("X-axis")
@@ -172,3 +161,21 @@ def display_plot(point: Point, region: Node[Trapezoid], line_segments: LineSegme
         plt.savefig("TrapezoidalMapPlot.png")
     else: # displays plot
         plt.show()
+
+def run_algorithm(point: Point, line_segments: LineSegment, show_plot:bool=False, write_result_to_file:bool=False, query_only:bool=False, debug:bool=False): # O_E(n log n)
+    # runs the algorithm resulting in a trapezodial map, T, and a search structure, D.
+    T, D = build_TM_and_SS(point, line_segments, debug) # O_E(n log n)
+
+    # Query search structure
+    region = D.query(point) # O_E(log n)
+
+    if debug:
+        print_results(point, region)
+
+    # if wanted writes output to file 
+    if write_result_to_file or query_only:
+        write_to_file(point, region, line_segments, T, D, query_only) # O(n) if not query_only else O(1)
+
+    # if wanted displays plot of trapazoid map
+    if show_plot:
+        display_plot(point, region, line_segments, T) # O(n)

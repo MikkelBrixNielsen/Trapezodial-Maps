@@ -3,8 +3,8 @@ from objects import LineSegment, Trapezoid, Point
 from SS import SearchStructure
 import matplotlib.pyplot as plt
 
-BB = None
-DEBUG = False
+BB = None  # used to be able to print bounding box on plots when debugging 
+DEBUG = False # Global debug falg set in build_TM_and_SS as to not have to pass a debug falg to all methods
 
 ################################################### DEBUG METHODS ##################################################
 def print_border():
@@ -69,12 +69,12 @@ def print_order(line_segments):
     print_borders(print_order_aux, line_segments)
 ##################################################################################################################
 
-def extract_points(linesegments):
-    return [p for ls in linesegments for p in (ls.start, ls.end)]
+def extract_points(linesegments): # O(n) althouhg it creates m = 2n points
+    return [p for ls in linesegments for p in (ls.start, ls.end)] # O(2n)
 
-def find_min_max(points):
+def find_min_max(points): # O(n)
     x_min, x_max, y_min, y_max = points[0].x, points[0].x, points[0].y, points[0].y
-    for p in points:
+    for p in points: # O(m) \in O(n), where m = 2n
         if p.x >= x_max:
             x_max = p.x
         elif p.x <= x_min:
@@ -87,27 +87,27 @@ def find_min_max(points):
 
     return x_min, x_max, y_min, y_max
 
-def create_bounding_box(point, linesegments):
-    x_min, x_max, y_min, y_max = find_min_max(extract_points(linesegments))
-    x_min, x_max = min(x_min, point.x), max(x_max, point.x)
-    y_min, y_max = min(y_min, point.y), max(y_max, point.y)
+def create_bounding_box(point, linesegments): # O(n)
+    x_min, x_max, y_min, y_max = find_min_max(extract_points(linesegments)) # O(n)
+    x_min, x_max = min(x_min, point.x), max(x_max, point.x) # Ensure point is also inside bounding box O(1)
+    y_min, y_max = min(y_min, point.y), max(y_max, point.y) # Ensure point is also inside bounding box O(1)
     # make bounding box slightly larger than found coordinates 
-    x_min, x_max, y_min, y_max = x_min - 1, x_max + 1, y_min - 1, y_max + 1
+    x_min, x_max, y_min, y_max = x_min - 1, x_max + 1, y_min - 1, y_max + 1 # O(1)
     # create bounding box trapezoid
-    upper = LineSegment(x_min, y_max, x_max, y_max) # Top line 
-    lower = LineSegment(x_min, y_min, x_max, y_min) # Bottom line
-    return Trapezoid(upper, lower, Point(x_min, y_min), Point(x_max, y_max)) # upper, lower, left, right boundary for trapezoid
+    upper = LineSegment(x_min, y_max, x_max, y_max) # Top line O(1)
+    lower = LineSegment(x_min, y_min, x_max, y_min) # Bottom line O(1)
+    return Trapezoid(upper, lower, Point(x_min, y_min), Point(x_max, y_max)) # upper, lower, left, right boundary for trapezoid O(1)
 
-def generate_random_perm(linesegments):
+def generate_random_perm(linesegments): # From python doc \O(m log n) with m being #choices to make and n being #nodes_to_choose_from 
     return random.sample(linesegments, len(linesegments))
 
 def initialization(point, linesegments):
-    global BB
-    BB, perm = create_bounding_box(point, linesegments), generate_random_perm(linesegments)
-    SS = SearchStructure(BB)
+    global BB # used to be able to print bounding box on plots when debugging 
+    BB = create_bounding_box(point, linesegments)
+    SS, perm = SearchStructure(BB), generate_random_perm(linesegments)
     return SS, perm
 
-def BTM(point, linesegments, debug=False):
+def build_TM_and_SS(point, linesegments, debug=False):
     global DEBUG
     DEBUG = debug
     order = [] # for debugging    

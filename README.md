@@ -83,7 +83,7 @@ To use the program, ensure you are inside the project folder and have Python 3.8
 Then to run the program use the following command:
 
 ```bash
-python ./src/main.py [ optional -d -p -o ] <path_to_file>
+python ./src/main.py [ optional -d -p -o -qo ] <path_to_file>
 ```
 
 ### Parameters
@@ -92,6 +92,7 @@ python ./src/main.py [ optional -d -p -o ] <path_to_file>
   - `-d`: Enable debug mode.
   - `-p`: Plot the output (region containing query point is colored red, query point is colored blue).
   - `-o`: Output a textual result in `output.txt` and a visual result in `TrapezoidalMapPlot.png`.
+  - `-qo`: Output only the result of the query in `output.txt` (No search structure or image).
   
 - **File Argument**:
   - You can specify either:
