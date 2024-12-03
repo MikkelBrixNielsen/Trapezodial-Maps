@@ -3,6 +3,15 @@ from typing import Generic, TypeVar, Optional
 NODE_TYPE = TypeVar('T')
 DEBUG = False
 
+import matplotlib.pyplot as plt
+def plot_current_trap_map(self):
+    temp_map = self.get_TM()
+    for t in temp_map:
+        t.plot()
+    plt.show()
+
+
+
 class Node(Generic[NODE_TYPE]):
     def __init__(self, data: Optional[NODE_TYPE] = None, left=None, right=None) -> None:
         self.data = data # Can be region, point, or line segment
@@ -181,6 +190,7 @@ class SearchStructure:
 
         if len(traps) > 1: # O_E(log n)
             if DEBUG:
+                plot_current_trap_map(self)
                 print(f"case {seg} intersects multiple trapezoids")
             AF, BF, CF, AL, BL, CL = self._handle_first_last_trap(traps, seg)
             traps[0].overwrite(seg.start, AF, Node(seg, BF, CF)) # overwrite for traps[0] and rearrange tree
@@ -188,13 +198,15 @@ class SearchStructure:
             traps[-1].overwrite(seg.end, Node(seg, B, C), AL) # overwrite for traps[-1] and rearrange tree
         else: # traps <= 1, so entire segment is contained within a single trapezoid / region --- O(1)
             if DEBUG:
+                plot_current_trap_map(self)
                 print(f"case {seg} intersects single trapezoid")
             A, B, C, D = self._split_trap_into_four(traps[0], seg) # O(1)
             # rearrange SS structure to reflect that trapezoids A, B, C, D has replaced delta_0
             traps[0].overwrite(seg.start, A, Node(seg.end, Node(seg, C, D), B)) # O(1)
-        
+
         if DEBUG:
             self.show()
+            plot_current_trap_map(self)
     
     def query(self, point: Point) -> Node[Trapezoid]: # O_E(log n)
         region: Node[Trapezoid] = self._find_region(point) # O_E(log n)
@@ -204,7 +216,7 @@ class SearchStructure:
 ###################################### METHODS FOR SHOWING / retrieving D AND T ######################################
     def _get_TM_aux(self, current: Node) -> list[Node[Trapezoid]]: # Linear in size of D which is linear in the size of input, n, so 
         if (not current.left) and (not current.right): # Trapezoid nodes do not have left / right children
-            if not current.data.collected: # ensures each trapezoid is only collected once for display purposes
+            if DEBUG or not current.data.collected: # ensures each trapezoid is only collected once for display purposes
                 current.data.collected = True
                 return [current.data] 
             else:
