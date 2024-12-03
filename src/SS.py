@@ -54,7 +54,7 @@ class SearchStructure:
     def _follow_segment(self, region: Node[Trapezoid], seg: LineSegment) -> list[Node[Trapezoid]]: # O_E(log n)
         regions = []
         current = region
-        # appends delta_0 -> delta_k-1 - these regions are intersected by s_i
+        # appends delta_0 -> delta_k - these regions are intersected by s_i
         while current and (current.data.leftp.x < seg.end.x): # expcted that log n trapezoids will be intersected when inserting each s_i \in S when S has been randomly permuted
             regions.append(current) # O(1)
             current = self._next_neighbour(current, seg) # O(1)
