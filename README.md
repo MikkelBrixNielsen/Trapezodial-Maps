@@ -94,6 +94,8 @@ python ./src/main.py [ optional -d -p -o -qo ] <path_to_file>
   - `-o`: Output a textual result in `output.txt` and a visual result in `TrapezoidalMapPlot.png`.
   - `-qo`: Output only the result of the query in `output.txt` (No search structure or image).
   
+<div style="page-break-after: always;"></div>
+
 - **File Argument**:
   - You can specify either:
     - `./Test/<file_name>` to use the provided test files, or
@@ -105,7 +107,7 @@ For input data, represent a line segment going from `(x1, y1)` to `(x2, y2)`�
 
 Similarly, a point is represented by using two coordinates instead of four and there should be exactly one.
 
-A test file should have the point specified on the first line followed by a sequence of disjoint line segments on the subsequent lines, where no two coordinates `(x or y)` are identical.
+A test file should have the point specified on the first line followed by a sequence of disjoint line segments on the subsequent lines, where no two coordinate's `(x or y)` are identical.
 
 Positive and negative integer and float coordinates are allowed, the sign is however required to be immediately in front of the integer/float.
 
@@ -141,7 +143,7 @@ In regards to input not following the specified format various errors can arise 
 - Points or line segments being wrongly formatted.
 - A line segment is vertical i.e. `x1 == x2`
 
-### Textual Output
+### Textual / Pysical Output
 
 The files `output.txt` and `TrapezoidalMapPlot.png` will be created in the current directory from which you run the program. For example:
 
@@ -152,7 +154,7 @@ The files `output.txt` and `TrapezoidalMapPlot.png` will be created in the curre
 The format of `output.txt` will have a sentence describing which trapezoid the query point is contained within, along with the data describing the trapezoid followed by a textual representation of the search structure, which could look like the following:
 
 ``` example
-----------------------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------
 The query point: Point(x: 3.0, y: 3.0) lies within: R4
 
 Trapezoid(
@@ -164,9 +166,9 @@ Trapezoid(
     leftN: ['R1']
     rightN: ['R2']
     )
-----------------------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------
 
------------------------------------The resulting search structure-----------------------------------
+--------------------------The resulting search structure--------------------------
 Root: Point(x: 1.0, y: 5.0)
     L: |--->Trapezoid(
         upper: LineSegment(from: Point(x: 0.0, y: 6.0), to: Point(x: 6.0, y: 6.0))
@@ -206,13 +208,17 @@ Root: Point(x: 1.0, y: 5.0)
             leftN: ['R3', 'R4']
             rightN: []
             )
-----------------------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------
 ```
+
+<div style="page-break-after: always;"></div>
 
 ### Graphical Output
 
 For graphical output, the `-p` option enables the program to generate a visual representation of the results. When this flag is used, Matplotlib is employed to display the trapezoidal map by plotting the trapezoids constructed during its creation along with the line segments specified in the input file as well as the query point. The trapezoid containing the query point will be colored red and the query point colored blue, which could look like the following figure:
 ![Example_Graphical_Output](Images\Example_Graphical_Output.png)
+
+<div style="page-break-after: always;"></div>
 
 ### Notes on The Provided Tests
 
@@ -234,4 +240,4 @@ There are provided 21 tests of which the test files `test14.txt` through `test21
 
 - `test21.txt`:  `Error: Vertical line defined on line 2 in input file.`
 
-For all other test files, when the `-o` flag is used, all test files should output what region the query point is located in and a representation of the search structure in `output.txt` along with a picture of the map in `TrapezoidalMapPlot.png`. If the `-p` flag is used, the output should be displayed graphically. In both cases, the program should run without errors.
+For all other test files, when the `-qo` flag is used, all test files should output what region contains the query point is output.txt. Additionally, if the `-o` flag is used a representation of the search structure will also be written to output.txt along with what region  contains the query point as well as a picture of the map in TrapezoidalMapPlot.png. If the `-p` flag is used, the output should be displayed graphically. In any case, the program should run without errors.
